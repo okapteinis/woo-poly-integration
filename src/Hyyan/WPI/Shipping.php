@@ -1,194 +1,112 @@
 <?php
 
-/**
- * This file is part of the hyyan/woo-poly-integration plugin.
- * (c) Hyyan Abo Fakher <hyyanaf@gmail.com>.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
 namespace Hyyan\WPI;
 
 use Hyyan\WPI\Admin\Settings;
 use Hyyan\WPI\Admin\Features;
 use Hyyan\WPI\Utilities;
+use WC_Shipping_Zone;
+use WC_Shipping_Zones;
+use WC_Order;
 
-/**
- * Shipping.
- *
- * Handle Shipping Methods
- *
- * @author Antonio de Carvalho <decarvalhoaa@gmail.com>
- */
 class Shipping
 {
-
-    /**
-     * Construct object.
-     */
     public function __construct()
     {
-
-        // Register WooCommerce shipping method custom names in polylang strings translations table
-        // called only after Wordpress is loaded
-        add_action('wp_loaded', array($this, 'registerShippingStringsForTranslation'));
-
-        // Shipping method in the Cart and Checkout pages
-        add_filter('woocommerce_shipping_rate_label', array($this, 'translateShippingLabel'), 10, 1);
-
-        // Shipping method in My Account page, Order Emails and Paypal requests
-        add_filter('woocommerce_order_shipping_method', array($this, 'translateOrderShippingMethod'), 10, 2);
+        add_action('wp_loaded', [$this, 'registerShippingStringsForTranslation']);
+        add_filter('woocommerce_shipping_rate_label', [$this, 'translateShippingLabel'], 10, 1);
+        add_filter('woocommerce_order_shipping_method', [$this, 'translateOrderShippingMethod'], 10, 2);
     }
 
-    /**
-     * Disable Settings.
-     *
-     * @return false if the current post type is not "product"
-     */
-    public function disableSettings()
+    public function disableSettings(): bool
     {
-        $currentScreen = function_exists( 'get_current_screen' ) ? get_current_screen() : false;
-        if ($currentScreen && $currentScreen->id !== 'settings_page_hyyan-wpi') {
+        $currentScreen = function_exists('get_current_screen') ? get_current_screen() : false;
+        if (!$currentScreen || $currentScreen->id !== 'settings_page_hyyan-wpi') {
             return false;
         }
 
-        add_action('admin_print_scripts', array($this, 'disableShippingClassFeature'), 100);
+        add_action('admin_print_scripts', [$this, 'disableShippingClassFeature'], 100);
+        return true;
     }
 
-    /**
-     * Add the disable Shipping Class translation feature script.
-     *
-     * The script will disable enabling the Shipping Class translation feature
-     */
-    public function disableShippingClassFeature()
+    public function disableShippingClassFeature(): void
     {
         $jsID = 'shipping-class-translation-disabled';
         $code = '$( "#wpuf-wpi-features\\\[shipping-class\\\]" ).prop( "disabled", true );';
-
-        // To use any of the meta-characters ( such as !"#$%&'()*+,./:;<=>?@[]^`{|}~ )
-        // as a literal part of a name, it must be escaped with with two backslashes: \\.
-        // Because jsScriptWrapper() uses sprintf() it will treat one backslash as escape
-        // character, so we need to add a 3rd (crazy!) backslashes.
-
         Utilities::jsScriptWrapper($jsID, $code);
     }
 
-    /**
-     * Helper function - Gets the shipping methods enabled in the shop.
-     *
-     * @return array $active_methods The id and respective plugin id of all active methods
-     */
-    private function getActiveShippingMethods()
+    private function getActiveShippingMethods(): array
     {
-        $active_methods = array();
+        $activeMethods = [];
+        $shippingMethods = $this->getZonesShippingMethods();
 
-        // Format:  $shipping_methods[method_id] => shipping_method_object
-        // where methods_id is e.g. flat_rate, free_shiping, local_pickup, etc
-        $shipping_methods = $this->getZonesShippingMethods();
-
-        foreach ($shipping_methods as $id => $shipping_method) {
-            if (isset($shipping_method->enabled) && 'yes' === $shipping_method->enabled) {
-                $active_methods[$id] = $shipping_method->plugin_id;
+        foreach ($shippingMethods as $id => $shippingMethod) {
+            if (isset($shippingMethod->enabled) && $shippingMethod->enabled === 'yes') {
+                $activeMethods[$id] = $shippingMethod->plugin_id;
             }
         }
 
-        return $active_methods;
+        return $activeMethods;
     }
 
-    /**
-     * Get the shipping methods for all shipping zones.
-     *
-     * Note: WooCommerce 2.6 intoduces the concept of Shipping Zones
-     *
-     * @return array (Array of) all shipping methods instances
-     */
-    public function getZonesShippingMethods()
+    public function getZonesShippingMethods(): array
     {
-        $zones = array();
+        $zones = [];
+        $shippingMethods = [];
 
-        // Rest of the World zone
-        $zone                                              = new \WC_Shipping_Zone();
-        $zones[$zone->get_id()]                            = $zone->get_data();
-        $zones[$zone->get_id()]['formatted_zone_location'] = $zone->get_formatted_location();
-        $zones[$zone->get_id()]['shipping_methods']        = $zone->get_shipping_methods();
+        $zone = new WC_Shipping_Zone();
+        $zones[$zone->get_id()] = [
+            ...$zone->get_data(),
+            'formatted_zone_location' => $zone->get_formatted_location(),
+            'shipping_methods' => $zone->get_shipping_methods()
+        ];
 
-        // Add user configured zones
-        $zones = array_merge($zones, \WC_Shipping_Zones::get_zones());
+        $zones = array_merge($zones, WC_Shipping_Zones::get_zones());
 
-        $shipping_methods = array();
-
-        // Format:  $shipping_methods[zone_name_method_id] => shipping_method_object
-        // where zone_name is e.g. domestic, europe, rest_of_the_world, and
-        // methods_id is e.g. flat_rate, free_shiping, local_pickup, etc
         foreach ($zones as $zone) {
-            foreach ($zone['shipping_methods'] as $instance_id => $shipping_method) {
-                // Zone names are converted to all lower-case and spaces replaced with
-                $shipping_methods[$shipping_method->id . '_' . $instance_id] = $shipping_method;
+            foreach ($zone['shipping_methods'] as $instanceId => $shippingMethod) {
+                $shippingMethods[$shippingMethod->id . '_' . $instanceId] = $shippingMethod;
             }
         }
 
-        return $shipping_methods;
+        return $shippingMethods;
     }
 
-    /**
-     * Register shipping method custom titles in Polylang's Strings translations table.
-     */
-    public function registerShippingStringsForTranslation()
+    public function registerShippingStringsForTranslation(): void
     {
-        if (function_exists('pll_register_string')) {
-            $shipping_methods = $this->getActiveShippingMethods();
+        if (!function_exists('pll_register_string')) {
+            return;
+        }
 
-            foreach ($shipping_methods as $method_id => $plugin_id) {
-                $setting = get_option($plugin_id . $method_id . '_settings');
-
-                if ($setting && isset($setting['title'])) {
-                    pll_register_string($plugin_id . $method_id . '_shipping_method', $setting['title'], __('WooCommerce Shipping Methods', 'woo-poly-integration'));
-                }
+        $shippingMethods = $this->getActiveShippingMethods();
+        foreach ($shippingMethods as $methodId => $pluginId) {
+            $setting = get_option($pluginId . $methodId . '_settings');
+            if ($setting && isset($setting['title'])) {
+                pll_register_string(
+                    $pluginId . $methodId . '_shipping_method',
+                    $setting['title'],
+                    __('WooCommerce Shipping Methods', 'woo-poly-integration')
+                );
             }
         }
     }
 
-    /**
-     * Translate shipping label in the Cart and Checkout pages.
-     *
-     * @param string $label Shipping method label
-     *
-     * @return string Translated label
-     */
-    public function translateShippingLabel($label)
+    public function translateShippingLabel(string $label): string
     {
         return function_exists('pll__') ? pll__($label) : __($label, 'woocommerce');
     }
 
-    /**
-     * Translate shipping method title in My Account page, Order Emails and Paypal requests.
-     *
-     * @param string   $implode  Comma separated string of shipping methods used in order
-     * @param WC_Order $instance Order instance
-     *
-     * @return string Comma separated string of translated shipping methods' titles
-     */
-    public function translateOrderShippingMethod($implode, $instance)
+    public function translateOrderShippingMethod(string $implode, WC_Order $instance): string
     {
+        $shippingMethods = explode(', ', $implode);
+        $translated = array_map(
+            fn($shipping) => function_exists('pll__') ? 
+                pll__($shipping) : 
+                __($shipping, 'woocommerce'),
+            $shippingMethods
+        );
 
-        // Convert the imploded array again to an array that is easy to manipulate
-        $shipping_methods = explode(', ', $implode);
-
-        // Array with translated shipping methods
-        $translated = array();
-
-        foreach ($shipping_methods as $shipping) {
-            if (function_exists('pll__')) {
-                $translated[] = pll__($shipping);
-            } else {
-                $translated[] = __($shipping, 'woocommerce');
-            }
-        }
-
-        // Implode array to string again
-        $translated_implode = implode(', ', $translated);
-
-        return $translated_implode;
+        return implode(', ', $translated);
     }
 }

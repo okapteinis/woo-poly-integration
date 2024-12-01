@@ -1,46 +1,29 @@
 <?php
 
-/**
- * This file is part of the hyyan/woo-poly-integration plugin.
- * (c) Hyyan Abo Fakher <hyyanaf@gmail.com>.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
 namespace Hyyan\WPI\Admin;
 
 use Hyyan\WPI\HooksInterface;
 
-/**
- * AbstractSettings.
- *
- * @author Hyyan
- * @author Hyyan Abo Fakher <hyyanaf@gmail.com>
- */
 abstract class AbstractSettings implements SettingsInterface
 {
-    /**
-     * Construct object.
-     */
     public function __construct()
     {
         add_filter(
-                HooksInterface::SETTINGS_SECTIONS_FILTER, array($this, 'getSections')
+            HooksInterface::SETTINGS_SECTIONS_FILTER,
+            [$this, 'getSections']
         );
         add_filter(
-                HooksInterface::SETTINGS_FIELDS_FILTER, array($this, 'getFields')
+            HooksInterface::SETTINGS_FIELDS_FILTER,
+            [$this, 'getFields']
         );
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getSections(array $sections)
+    public function getSections(array $sections): array
     {
-        $new = array();
+        $new = [];
         $current = apply_filters(
-                $this->getSectionsFilterName(), (array) $this->doGetSections()
+            $this->getSectionsFilterName(),
+            (array) $this->doGetSections()
         );
 
         foreach ($current as $def) {
@@ -51,45 +34,27 @@ abstract class AbstractSettings implements SettingsInterface
         return array_merge($sections, $new);
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getFields(array $fields)
+    public function getFields(array $fields): array
     {
-        return array_merge($fields, array(
+        return array_merge($fields, [
             static::getID() => apply_filters(
-                    $this->getFieldsFilterName(), (array) $this->doGetFields()
+                $this->getFieldsFilterName(),
+                (array) $this->doGetFields()
             ),
-        ));
+        ]);
     }
 
-    /**
-     * Get sections filter name.
-     *
-     * @return string
-     */
-    protected function getSectionsFilterName()
+    protected function getSectionsFilterName(): string
     {
         return sprintf('woo-poly.settings.%s_sections', static::getID());
     }
 
-    /**
-     * Get sections filter name.
-     *
-     * @return string
-     */
-    protected function getFieldsFilterName()
+    protected function getFieldsFilterName(): string
     {
         return sprintf('woo-poly.settings.%s_fields', static::getID());
     }
 
-    /**
-     * @see SettingsInterface::getSections()
-     */
-    abstract protected function doGetSections();
+    abstract protected function doGetSections(): array;
 
-    /**
-     * @see SettingsInterface::getFields()
-     */
-    abstract protected function doGetFields();
+    abstract protected function doGetFields(): array;
 }

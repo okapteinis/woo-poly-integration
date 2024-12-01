@@ -1,88 +1,36 @@
 <?php
 
-/**
- * This file is part of the hyyan/woo-poly-integration plugin.
- * (c) Hyyan Abo Fakher <hyyanaf@gmail.com>.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
 namespace Hyyan\WPI;
 
 use Hyyan\WPI\Tools\FlashMessages;
+use WC;
+use WP;
+use PLL;
 
-/**
- * Endpoints.
- *
- * @author Hyyan Abo Fakher <hyyanaf@gmail.com>
- */
 class Endpoints
 {
-    /**
-     * Array of current found endpoints.
-     *
-     * @var array
-     */
-    protected $endpoints = array();
+    protected array $endpoints = [];
 
-    /**
-     * Construct object.
-     */
     public function __construct()
     {
-
-        /* Register endpoints to translate as polulang strings */
         $this->regsiterEndpointsTranslations();
 
-        add_action(
-                'init', array($this, 'rewriteEndpoints'), 11
-        );
-        add_action(
-                'woocommerce_update_options', array($this, 'addEndpoints')
-        );
-        add_filter(
-                'pre_update_option_rewrite_rules', array($this, 'updateRules'), 100, 2
-        );
-        add_filter(
-                'pll_the_language_link', array($this, 'correctPolylangSwitcherLinks'), 10, 2
-        );
-        add_filter(
-                'wp_get_nav_menu_items', array($this, 'fixMyAccountLinkInMenus')
-        );
-        add_action(
-                'current_screen', array($this, 'showFlashMessages')
-        );
+        add_action('init', [$this, 'rewriteEndpoints'], 11);
+        add_action('woocommerce_update_options', [$this, 'addEndpoints']);
+        add_filter('pre_update_option_rewrite_rules', [$this, 'updateRules'], 100, 2);
+        add_filter('pll_the_language_link', [$this, 'correctPolylangSwitcherLinks'], 10, 2);
+        add_filter('wp_get_nav_menu_items', [$this, 'fixMyAccountLinkInMenus']);
+        add_action('current_screen', [$this, 'showFlashMessages']);
     }
 
-
-
-    /**
-     * Rewrite endpoints.
-     *
-     * Add all endpoints to polylang strings table
-     */
-    public function rewriteEndpoints()
+    public function rewriteEndpoints(): void
     {
         $this->addEndpoints();
-        //flush_rewrite_rules();
     }
 
-    /**
-     * Register endpoints translations.
-     *
-     * Find all woocomerce endpoints and register them with polylang to be
-     * translated as polylang strings
-     *
-     * @global \Polylang $polylang
-     * @global \WooCommerce $woocommerce
-     *
-     * @return false if missing polylang or woocommerce
-     */
-    public function regsiterEndpointsTranslations()
+    public function regsiterEndpointsTranslations(): bool
     {
-        global $polylang, $woocommerce;
-        if (!$polylang || !$woocommerce) {
+        if (!function_exists('WC') || !function_exists('PLL')) {
             return false;
         }
 
@@ -90,44 +38,30 @@ class Endpoints
         foreach ($vars as $key => $value) {
             WC()->query->query_vars[$key] = $this->getEndpointTranslation($value);
         }
+
+        return true;
     }
 
-    /**
-     * Get endpoint translations.
-     *
-     * Register endpoint as polylang string if not registered and returne the
-     * endpoint translation for the current langauge
-     *
-     * @global \Polylang $polylang
-     *
-     * @param string $endpoint the endpoint name
-     *
-     * @return string endpoint translation
-     */
-    public function getEndpointTranslation($endpoint)
+    public function getEndpointTranslation(string $endpoint): string
     {
         pll_register_string(
-                $endpoint, $endpoint, static::getPolylangStringSection()
+            $endpoint,
+            $endpoint,
+            static::getPolylangStringSection()
         );
 
-        $this->endpoints [] = $endpoint;
+        $this->endpoints[] = $endpoint;
 
         return pll__($endpoint);
     }
 
-    /**
-     * Update Rules.
-     *
-     * Update the endpoint rule with new value and flush the rewrite rules
-     *
-     * @param string $value endpoint name
-     *
-     * @return string endpoint name
-     */
-    public function updateRules($value)
+    public function updateRules(mixed $value): mixed
     {
         remove_filter(
-                'pre_update_option_rewrite_rules', array($this, __FUNCTION__), 100, 2
+            'pre_update_option_rewrite_rules',
+            [$this, __FUNCTION__],
+            100,
+            2
         );
         $this->addEndpoints();
         flush_rewrite_rules();
@@ -135,72 +69,43 @@ class Endpoints
         return $value;
     }
 
-    /**
-     * Add endpoints.
-     *
-     * Add all endpoints translation in the current langauge
-     */
-    public function addEndpoints()
+    public function addEndpoints(): void
     {
         $langs = pll_languages_list();
         foreach ($this->endpoints as $endpoint) {
             foreach ($langs as $lang) {
-                add_rewrite_endpoint(pll_translate_string($endpoint, $lang), EP_ROOT | EP_PAGES);
+                add_rewrite_endpoint(
+                    pll_translate_string($endpoint, $lang),
+                    EP_ROOT | EP_PAGES
+                );
             }
         }
     }
 
-    /**
-     * Get Endpoint Url.
-     *
-     * Rebuild permalink with corrent endpoint translation
-     *
-     * @param string $endpoint  endpoint name
-     * @param string $value
-     * @param string $permalink orginal permalink
-     *
-     * @return string final permalink
-     */
-    public function rebuildUrl($endpoint, $value = '', $permalink = '')
+    public function rebuildUrl(string $endpoint, string $value = '', string $permalink = ''): string
     {
         if (get_option('permalink_structure')) {
+            $query_string = '';
             if (strstr($permalink, '?')) {
-                $query_string = '?'.parse_url($permalink, PHP_URL_QUERY);
+                $query_string = '?' . parse_url($permalink, PHP_URL_QUERY);
                 $permalink = current(explode('?', $permalink));
-            } else {
-                $query_string = '';
             }
-            $url = trailingslashit($permalink)
-                    .$endpoint
-                    .'/'
-                    .$query_string;
-        } else {
-            $url = add_query_arg($endpoint, $value, $permalink);
+            return trailingslashit($permalink) . $endpoint . '/' . $query_string;
         }
-
-        return $url;
+        
+        return add_query_arg($endpoint, $value, $permalink);
     }
 
-    /**
-     * Correct Polylang Switcher Links.
-     *
-     * Add the correct endpoint translations for polylang switcher links
-     *
-     * @global \WP $wp
-     *
-     * @param string $link link
-     * @param string $slug langauge
-     *
-     * @return string final link
-     */
-    public function correctPolylangSwitcherLinks($link, $slug)
+    public function correctPolylangSwitcherLinks(string $link, string $slug): string
     {
         global $wp;
         $endpoints = WC()->query->get_query_vars();
         foreach ($endpoints as $key => $value) {
             if (isset($wp->query_vars[$key])) {
                 $link = str_replace(
-                        $value, pll_translate_string($key, $slug), $link
+                    $value,
+                    pll_translate_string($key, $slug),
+                    $link
                 );
                 break;
             }
@@ -209,64 +114,47 @@ class Endpoints
         return $link;
     }
 
-    /**
-     * Fix My Account Link In Menus.
-     *
-     * The method will remove endpoints from my account page link in wp menus
-     *
-     * @global \Polylang $polylang
-     *
-     * @param array $items menu items
-     *
-     * @return array menu items
-     *
-     * @todo Find a better solution
-     */
-    public function fixMyAccountLinkInMenus(array $items = array())
+    public function fixMyAccountLinkInMenus(?array $items = []): array
     {
-        global $polylang;
+        if (!function_exists('PLL')) {
+            return $items ?? [];
+        }
+
         $translations = PLL()->model->post->get_translations(
-                wc_get_page_id('myaccount')
+            wc_get_page_id('myaccount')
         );
 
-        foreach ($items as $item) {
-            if (in_array($item->object_id, $translations)) {
+        foreach ($items ?? [] as $item) {
+            if (in_array($item->object_id, $translations, true)) {
                 $vars = WC()->query->get_query_vars();
                 foreach ($vars as $key => $value) {
-                    if ($value && false !== ($pos = strpos($item->url, $value))) {
+                    if ($value && ($pos = strpos($item->url, $value)) !== false) {
                         $item->url = substr($item->url, 0, $pos);
                     }
                 }
             }
         }
 
-        return $items;
+        return $items ?? [];
     }
 
-    /**
-     * Show flash messages.
-     *
-     * Show endpoints flash messages in defined screens only
-     */
-    public function showFlashMessages()
+    public function showFlashMessages(): void
     {
-        $screen = function_exists( 'get_current_screen' ) ? get_current_screen() : false;
-        /*
-         * this only gets shown once before being dismissed so show only in the relevant place
-         */
-        if ( $screen && $screen->id == 'woocommerce_page_wc-settings' && isset( $_GET[ 'tab' ] ) && $_GET[ 'tab' ] == 'advanced' ) {
+        $screen = function_exists('get_current_screen') ? get_current_screen() : false;
+        
+        if ($screen && 
+            $screen->id === 'woocommerce_page_wc-settings' && 
+            isset($_GET['tab']) && 
+            $_GET['tab'] === 'advanced'
+        ) {
             FlashMessages::add(
-			MessagesInterface::MSG_ENDPOINTS_TRANSLATION, Plugin::getView( 'Messages/endpointsTranslations' )
+                MessagesInterface::MSG_ENDPOINTS_TRANSLATION,
+                Plugin::getView('Messages/endpointsTranslations')
             );
         }
     }
 
-    /**
-     * Get polylang StringSection.
-     *
-     * @return string section name
-     */
-    public static function getPolylangStringSection()
+    public static function getPolylangStringSection(): string
     {
         return __('WooCommerce Endpoints', 'woo-poly-integration');
     }

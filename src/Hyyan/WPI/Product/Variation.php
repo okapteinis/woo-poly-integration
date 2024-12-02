@@ -49,7 +49,14 @@ class Variation
 
             foreach ($fromVariation as $variation_id) {
                 $variation = $this->from->get_available_variation($variation_id);
-                $posts = $this->getVariationPosts($variation_id);
+                $posts = get_posts([
+                    'meta_key' => self::DUPLICATE_KEY,
+                    'meta_value' => $variation_id,
+                    'post_type' => 'product_variation',
+                    'post_status' => 'any',
+                    'post_parent' => $this->to->get_id(),
+                    'lang' => '',
+                ]);
 
                 switch (count($posts)) {
                     case 1:
@@ -64,13 +71,36 @@ class Variation
                         $this->insert(wc_get_product($variation_id), $variation);
                         break;
                     default:
-                        $this->handleDuplicateVariations($variation_id, $posts, $previousVariations, $variation);
+                        $this->update(
+                            wc_get_product($variation_id),
+                            $posts[0],
+                            $variation
+                        );
+                        $count = count($posts);
+                        error_log("woo-poly is deleting duplicate variations for variation " . $variation['variation_id'] .
+                            " in product " . $this->from->get_id() . " translation " . $this->to->get_id());
+                        for ($i = 1; $i < $count; $i++) {
+                            $duplicate = wc_get_product($posts[$i]);
+                            if ($duplicate) {
+                                $duplicate->delete(true);
+                                unset($previousVariations[array_search($posts[$i]->ID, $previousVariations)]);
+                            }
+                        }
                         break;
                 }
             }
 
-            $this->cleanupPreviousVariations($previousVariations);
-            $this->updateProductStatus();
+            foreach ($previousVariations as $variation_id) {
+                $removedVariation = wc_get_product($variation_id);
+                if ($removedVariation) {
+                    $removedVariation->delete(true);
+                }
+            }
+
+            $target_status = $this->from->get_stock_status();
+            wc_update_product_stock_status($this->to->get_id(), $target_status);
+            Utilities::flushCacheUpdateLookupTable($this->to->get_id());
+            set_time_limit(ini_get('max_execution_time'));
         }
 
         return true;
@@ -240,7 +270,37 @@ class Variation
             if (pll_is_translated_taxonomy($tax) && $termSlug) {
                 $term = $this->getTermBySlug($tax, $termSlug);
                 if ($term) {
-                    $translated[] = $this->getTranslatedTermSlug($term, $tax, $termSlug, $from);
+                    $term_id = $term->term_id;
+                    $lang = isset($_GET['new_lang']) ? 
+                        esc_attr($_GET['new_lang']) : 
+                        pll_get_post_language($this->to->get_id());
+                    
+                    $translated_term = pll_get_term($term_id, $lang);
+                    if ($translated_term) {
+                        $translated[] = get_term_by('id', $translated_term, $tax)->slug;
+                    } else {
+                        $fromLang = pll_get_post_language($from);
+                        if (!$fromLang) {
+                            $fromLang = pll_get_post_language(wc_get_product($from)->get_parent_id());
+                        }
+
+                        if ($fromLang) {
+                            $term = pll_get_term($term_id, $fromLang);
+                            if ($term) {
+                                $term = get_term_by('id', $term, $tax);
+                                $result = Meta::createDefaultTermTranslation($tax, $term, $termSlug, $lang, false);
+                                if ($result) {
+                                    $translated[] = $result;
+                                } else {
+                                    $translated[] = $termSlug;
+                                }
+                            } else {
+                                $translated[] = $termSlug;
+                            }
+                        } else {
+                            $translated[] = $termSlug;
+                        }
+                    }
                 } else {
                     $translated[] = $termSlug;
                 }
@@ -252,80 +312,5 @@ class Variation
         foreach ($translated as $value) {
             add_post_meta($to, $key, $value);
         }
-    }
-
-    protected function getTranslatedTermSlug(WP_Term $term, string $tax, string $termSlug, int $from): string
-    {
-        $term_id = $term->term_id;
-        $lang = isset($_GET['new_lang']) ? esc_attr($_GET['new_lang']) : pll_get_post_language($this->to->get_id());
-        $translated_term = pll_get_term($term_id, $lang);
-
-        if ($translated_term) {
-            return get_term_by('id', $translated_term, $tax)->slug;
-        }
-
-        $fromLang = pll_get_post_language($from);
-        if (!$fromLang) {
-            $fromLang = pll_get_post_language(wc_get_product($from)->get_parent_id());
-        }
-
-        if ($fromLang) {
-            $term = pll_get_term($term_id, $fromLang);
-            if ($term) {
-                $term = get_term_by('id', $term, $tax);
-                $result = Meta::createDefaultTermTranslation($tax, $term, $termSlug, $lang, false);
-                if ($result) {
-                    return $result;
-                }
-            }
-        }
-
-        return $termSlug;
-    }
-
-    protected function getVariationPosts(int $variation_id): array
-    {
-        return get_posts([
-            'meta_key' => self::DUPLICATE_KEY,
-            'meta_value' => $variation_id,
-            'post_type' => 'product_variation',
-            'post_status' => 'any',
-            'post_parent' => $this->to->get_id(),
-            'lang' => '',
-        ]);
-    }
-
-    protected function handleDuplicateVariations(int $variation_id, array $posts, array &$previousVariations, array $variation): void
-    {
-        $this->update(wc_get_product($variation_id), $posts[0], $variation);
-        $count = count($posts);
-        error_log("woo-poly is deleting duplicate variations for variation " . $variation['variation_id'] .
-            " in product " . $this->from->get_id() . " translation " . $this->to->get_id());
-        
-        for ($i = 1; $i < $count; $i++) {
-            $duplicate = wc_get_product($posts[$i]);
-            if ($duplicate) {
-                $duplicate->delete(true);
-                unset($previousVariations[array_search($posts[$i]->ID, $previousVariations)]);
-            }
-        }
-    }
-
-    protected function cleanupPreviousVariations(array $previousVariations): void
-    {
-        foreach ($previousVariations as $variation_id) {
-            $removedVariation = wc_get_product($variation_id);
-            if ($removedVariation) {
-                $removedVariation->delete(true);
-            }
-        }
-    }
-
-    protected function updateProductStatus(): void
-    {
-        $target_status = $this->from->get_stock_status();
-        wc_update_product_stock_status($this->to->get_id(), $target_status);
-        Utilities::flushCacheUpdateLookupTable($this->to->get_id());
-        set_time_limit(ini_get('max_execution_time'));
     }
 }

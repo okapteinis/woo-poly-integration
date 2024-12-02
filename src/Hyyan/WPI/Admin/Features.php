@@ -6,18 +6,16 @@ namespace Hyyan\WPI\Admin;
 
 class Features
 {
-    public const ID = 'wpi-features';
-
     public function getID(): string
     {
-        return self::ID;
+        return 'wpi-features';
     }
 
     protected function getSections(): array
     {
         return [
             [
-                'id' => self::ID,
+                'id' => 'wpi-features',
                 'title' => __('Features', 'woo-poly-integration'),
                 'desc' => sprintf(
                     '%s %s %s.',

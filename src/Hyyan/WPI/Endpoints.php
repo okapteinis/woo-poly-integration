@@ -1,11 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI;
 
 use Hyyan\WPI\Tools\FlashMessages;
-use WC;
-use WP;
-use PLL;
 
 class Endpoints
 {
@@ -13,8 +12,7 @@ class Endpoints
 
     public function __construct()
     {
-        $this->regsiterEndpointsTranslations();
-
+        $this->registerEndpointsTranslations();
         add_action('init', [$this, 'rewriteEndpoints'], 11);
         add_action('woocommerce_update_options', [$this, 'addEndpoints']);
         add_filter('pre_update_option_rewrite_rules', [$this, 'updateRules'], 100, 2);
@@ -28,7 +26,7 @@ class Endpoints
         $this->addEndpoints();
     }
 
-    public function regsiterEndpointsTranslations(): bool
+    public function registerEndpointsTranslations(): bool
     {
         if (!function_exists('WC') || !function_exists('PLL')) {
             return false;
@@ -49,9 +47,7 @@ class Endpoints
             $endpoint,
             static::getPolylangStringSection()
         );
-
         $this->endpoints[] = $endpoint;
-
         return pll__($endpoint);
     }
 
@@ -65,7 +61,6 @@ class Endpoints
         );
         $this->addEndpoints();
         flush_rewrite_rules();
-
         return $value;
     }
 
@@ -92,7 +87,6 @@ class Endpoints
             }
             return trailingslashit($permalink) . $endpoint . '/' . $query_string;
         }
-        
         return add_query_arg($endpoint, $value, $permalink);
     }
 
@@ -110,7 +104,6 @@ class Endpoints
                 break;
             }
         }
-
         return $link;
     }
 
@@ -123,7 +116,6 @@ class Endpoints
         $translations = PLL()->model->post->get_translations(
             wc_get_page_id('myaccount')
         );
-
         foreach ($items ?? [] as $item) {
             if (in_array($item->object_id, $translations, true)) {
                 $vars = WC()->query->get_query_vars();
@@ -134,17 +126,15 @@ class Endpoints
                 }
             }
         }
-
         return $items ?? [];
     }
 
     public function showFlashMessages(): void
     {
         $screen = function_exists('get_current_screen') ? get_current_screen() : false;
-        
-        if ($screen && 
-            $screen->id === 'woocommerce_page_wc-settings' && 
-            isset($_GET['tab']) && 
+        if ($screen &&
+            $screen->id === 'woocommerce_page_wc-settings' &&
+            isset($_GET['tab']) &&
             $_GET['tab'] === 'advanced'
         ) {
             FlashMessages::add(

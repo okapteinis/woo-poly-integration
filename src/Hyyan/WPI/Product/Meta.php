@@ -4,11 +4,35 @@ declare(strict_types=1);
 
 namespace Hyyan\WPI\Product;
 
+use Hyyan\WPI\HooksInterface;
+use Hyyan\WPI\Utilities;
+use Hyyan\WPI\Admin\Settings;
+use Hyyan\WPI\Admin\Features;
+use Hyyan\WPI\Admin\MetasList;
+use Hyyan\WPI\Taxonomies\Attributes;
 use WC_Product;
 use PLL_Language;
+use WP_Post;
+use WP_Term;
 
 class Meta
 {
+    public function __construct()
+    {
+        add_action('current_screen', [$this, 'handleProductScreen']);
+        add_action('woocommerce_product_quick_edit_save', [$this, 'saveQuickEdit'], 10, 1);
+        add_action('save_post_product', [$this, 'handleNewProduct'], 5, 3);
+        add_filter('wc_product_has_unique_sku', [$this, 'suppressInvalidDuplicatedSKUErrorMsg'], 100, 3);
+
+        if ('on' === Settings::getOption('importsync', Features::getID(), 'on')) {
+            add_action('woocommerce_product_import_inserted_product_object', [$this, 'onImport'], 10, 2);
+        }
+
+        if ('on' === Settings::getOption('attributes', Features::getID(), 'on')) {
+            add_action('woocommerce_attribute_added', [$this, 'newProductAttribute'], 10, 2);
+        }
+    }
+
     public static function getProductTranslationsArrayByID(int $ID, bool $excludeDefault = false): array
     {
         global $polylang;
@@ -32,45 +56,43 @@ class Meta
         return $product ? static::getProductTranslationByObject($product, $slug) : null;
     }
 
-    public static function getProductTranslationByObject(WC_Product $product, string $slug = ''): WC_Product
+    public static function getProductTranslationByObject(WC_Product $product, string $slug = ''): ?WC_Product
     {
         $productTranslationID = pll_get_post($product->get_id(), $slug);
         if ($productTranslationID) {
             $translated = wc_get_product($productTranslationID);
-            $product = $translated ?: $product;
+            return $translated ?: $product;
         }
         return $product;
     }
 
-    public static function getLanguageEntity(string $slug): ?PLL_Language
+    public function handleNewProduct(int $post_id, WP_Post $post, bool $update): void
     {
-        global $polylang;
-        foreach ($polylang->model->get_languages_list() as $lang) {
-            if ($lang->slug === $slug) {
-                return $lang;
-            }
+        if (!$update && isset($_GET['from_post'])) {
+            $this->syncTaxonomiesAndProductAttributes($post_id, $post, $update);
         }
-        return null;
     }
 
-    public static function getCurrentUrl(): string
+    public function newProductAttribute(int $insert_id, array $attribute): void
     {
-        return sprintf(
-            '%s://%s%s',
-            is_ssl() ? 'https' : 'http',
-            $_SERVER['HTTP_HOST'],
-            $_SERVER['REQUEST_URI']
-        );
+        $options = get_option('polylang');
+        $sync = $options['taxonomies'];
+        $attrname = 'pa_' . $attribute['attribute_name'];
+        
+        if (!in_array($attribute, $sync)) {
+            $options['taxonomies'][] = $attrname;
+            update_option('polylang', $options);
+        }
     }
 
-    public static function jsScriptWrapper(
-        string $ID,
-        string $code,
-        bool $jquery = true,
-        bool $return = false
-    ): ?string {
-        $prefix = 'hyyan-wpi-';
-        $header = sprintf('/* %s */', $prefix . $ID);
-        // Implementation continues...
+    public function onImport(WC_Product $object, array $data): void
+    {
+        $ProductID = $object->get_id();
+        if ($ProductID) {
+            do_action('pll_save_post', $ProductID, $object, PLL()->model->post->get_translations($ProductID));
+            $this->syncTaxonomiesAndProductAttributes($ProductID, $object, true);
+        }
     }
+
+    
 }

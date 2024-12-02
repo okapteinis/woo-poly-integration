@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Hyyan\WPI\Admin;
 
-class Features
+class Features extends AbstractSettings
 {
     public function getID(): string
     {

@@ -1,27 +1,45 @@
 <?php
+
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit('restricted access');
 }
+
+use Hyyan\WPI\Plugin;
 ?>
+
 <h3>
-    <span>
-        <?php _e('Support The Plugin', 'woo-poly-integration'); ?>
-    </span>
+    <span><?php esc_html_e('Support The Plugin', 'woo-poly-integration'); ?></span>
 </h3>
+
 <div class="inside">
-    <?php
-    _e('<strong>I will never ask you for donation, now or in the future</strong>,
-        but the plugin still needs your support.
-        please support by rating this plugin on
-        <a href="https://wordpress.org/support/view/plugin-reviews/woo-poly-integration">Wordpress Repository</a>,
-        or by giving the plugin a star on  <a href="https://github.com/hyyan/woo-poly-integration">Github</a>.
-        <br><br>
-        If you speak a language other than English,
-        you can support the plugin by extending the
-        translation list and your name will be added
-        to the translators list', 'woo-poly-integration'
-    );
-    ?>
-    <br><br>
-    <?php echo \Hyyan\WPI\Plugin::getView('social') ?>
+    <p>
+        <?php
+        echo wp_kses(
+            __(
+                '<strong>I will never ask you for donation, now or in the future</strong>, 
+                but the plugin still needs your support. 
+                please support by rating this plugin on 
+                <a href="https://wordpress.org/support/view/plugin-reviews/woo-poly-integration">Wordpress Repository</a>, 
+                or by giving the plugin a star on <a href="https://github.com/hyyan/woo-poly-integration">Github</a>. 
+                <br><br>
+                If you speak a language other than English, 
+                you can support the plugin by extending the 
+                translation list and your name will be added 
+                to the translators list',
+                'woo-poly-integration'
+            ),
+            [
+                'strong' => [],
+                'a' => [
+                    'href' => [],
+                ],
+                'br' => [],
+            ]
+        );
+        ?>
+    </p>
+
+    <?php echo wp_kses_post(Plugin::getView('social')); ?>
 </div>

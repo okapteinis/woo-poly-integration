@@ -1,67 +1,70 @@
 <?php
 
-/**
- * This file is part of the hyyan/woo-poly-integration plugin.
- * (c) Hyyan Abo Fakher <hyyanaf@gmail.com>.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
+declare(strict_types=1);
 
 namespace Hyyan\WPI\Widgets;
 
-/**
- * SearchWidget.
- *
- * @author Hyyan Abo Fakher <hyyanaf@gmail.com>
- */
+use Polylang;
+
 class SearchWidget
 {
-    /**
-     * Constuct object.
-     */
     public function __construct()
     {
-        add_filter('get_product_search_form', array(
-            $this, 'fixSearchForm',
-        ));
+        add_filter('get_product_search_form', [$this, 'fixSearchForm']);
     }
 
-    /**
-     * Fix search form to avoid duplicated products results.
-     *
-     * @global \Polylang $polylang
-     *
-     * @param string $form
-     *
-     * @return string modified form
-     */
-    public function fixSearchForm($form)
+    public function fixSearchForm(?string $form): string
     {
+        if (!$form) {
+            return '';
+        }
+
         global $polylang;
+        if (!($polylang instanceof Polylang)) {
+            return $form;
+        }
 
-        if ($form) {
-            if ((isset($polylang->links_model)) && ($polylang->links_model->using_permalinks)) {
+        return $this->processSearchForm($form, $polylang);
+    }
 
-                /* Take care to modify only the url in the <form> tag */
-                preg_match('#<form.+>#', $form, $matches);
-                $old = reset($matches);
-                $new = preg_replace(
-                        '#'.$polylang->links_model->home.'\/?#', $polylang->curlang->search_url, $old
-                );
+    private function processSearchForm(string $form, Polylang $polylang): string
+    {
+        if (isset($polylang->links_model) && $polylang->links_model->using_permalinks) {
+            return $this->handlePermalinks($form, $polylang);
+        }
 
-                $form = str_replace($old, $new, $form);
-            } else {
-                if (isset($polylang->curlang, $polylang->curlang->slug)) {
-                    $form = str_replace(
-                        '</form>', '<input type="hidden" name="lang" value="'
-                        .esc_attr($polylang->curlang->slug)
-                        .'" /></form>', $form
-                );
-                }
-            }
+        if (isset($polylang->curlang, $polylang->curlang->slug)) {
+            return $this->handleNonPermalinks($form, $polylang);
         }
 
         return $form;
+    }
+
+    private function handlePermalinks(string $form, Polylang $polylang): string
+    {
+        if (!preg_match('#<form.+>#', $form, $matches)) {
+            return $form;
+        }
+
+        $old = reset($matches);
+        $new = preg_replace(
+            '#' . $polylang->links_model->home . '\/?#',
+            $polylang->curlang->search_url,
+            $old
+        );
+
+        return $new ? str_replace($old, $new, $form) : $form;
+    }
+
+    private function handleNonPermalinks(string $form, Polylang $polylang): string
+    {
+        return str_replace(
+            '</form>',
+            sprintf(
+                '<input type="hidden" name="lang" value="%s" /></form>',
+                esc_attr($polylang->curlang->slug)
+            ),
+            $form
+        );
     }
 }

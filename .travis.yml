@@ -1,19 +1,21 @@
 install: true
 language: php
-dist: precise
-sudo: true
+dist: jammy
+sudo: false
 
 php:
- - 7.0
- 
+  - 8.4
+
 before_script:
- -  sudo apt-get install subversion
- 
-script: echo "skip sript"
+  - sudo apt-get update
+  - sudo apt-get install subversion
+
+script: echo "skip script"
+
 deploy:
   provider: script
-  skip_cleanup: true
-  script: chmod +x deploy.sh && sh deploy.sh 
+  cleanup: false
+  script: chmod +x deploy.sh && sh deploy.sh
   on:
     branch: master
-    php: 7.0
+    php: 8.4

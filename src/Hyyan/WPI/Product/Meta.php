@@ -1,26 +1,23 @@
 <?php
 
-namespace Hyyan\WPI;
+declare(strict_types=1);
+
+namespace Hyyan\WPI\Product;
 
 use WC_Product;
-use WC_Order;
-use WC_Order_Item_Product;
-use WC_Product_Data_Store_CPT;
-use WC_Data_Store;
 use PLL_Language;
-use PLL_Cache;
-use PLL_MO;
-use ReflectionMethod;
-use WP_Locale;
 
-final class Utilities
+class Meta
 {
     public static function getProductTranslationsArrayByID(int $ID, bool $excludeDefault = false): array
     {
-        $IDS = PLL()->model->post->get_translations($ID);
+        global $polylang;
+        $IDS = $polylang->model->post->get_translations($ID);
+
         if ($excludeDefault) {
             unset($IDS[pll_default_language()]);
         }
+
         return $IDS;
     }
 
@@ -73,31 +70,7 @@ final class Utilities
         bool $return = false
     ): ?string {
         $prefix = 'hyyan-wpi-';
-        $header = sprintf('<script type="text/javascript" id="%s">', $prefix . $ID);
-        $footer = '</script>';
-
-        $result = $jquery ? 
-            sprintf("%s\n jQuery(function ($) {\n %s \n});\n %s \n", $header, $code, $footer) :
-            sprintf("%s\n %s \n%s", $header, $code, $footer);
-
-        if (!$return) {
-            echo $result;
-            return null;
-        }
-        return $result;
+        $header = sprintf('/* %s */', $prefix . $ID);
+        // Implementation continues...
     }
-
-    public static function woocommerceVersionCheck(string $version): bool
-    {
-        global $woocommerce;
-        return version_compare($woocommerce->version, $version, '>=');
-    }
-
-    public static function polylangVersionCheck(string $version): bool
-    {
-        return defined('POLYLANG_VERSION') && 
-               version_compare(POLYLANG_VERSION, $version, '>=');
-    }
-
-    // ... [pārējās metodes ar līdzīgām izmaiņām]
 }

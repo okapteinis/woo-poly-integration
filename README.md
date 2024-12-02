@@ -15,25 +15,6 @@ This plugin makes it possible to run multilingual e-commerce sites using WooComm
 - WooCommerce 8.4 or higher
 - Polylang 3.0 or higher
 
-## Features
-
-[Previous features list remains unchanged]
-
-## Important Notes
-
-1. The plugin requires PHP 8.4 or above
-2. Developed in sync with latest versions of Polylang and WooCommerce
-3. Variable products support will disallow changing the default language
-4. Polylang URL modifications method "The language is set from content" is not supported
-5. Uses strict typing and modern PHP 8.4 features
-
-## Installation
-
-### Via Composer
-```bash
-composer require hyyan/woo-poly-integration
-
-
 ## Main Changes
 
 1. **Updated Requirements**:
@@ -56,3 +37,18 @@ composer require hyyan/woo-poly-integration
 - Updated technical requirements
 
 These changes reflect the modernization of the codebase and its compatibility with PHP 8.4.
+
+## Important Notes
+
+1. The plugin requires PHP 8.4 or above
+2. Developed in sync with latest versions of Polylang and WooCommerce
+3. Variable products support will disallow changing the default language
+4. Polylang URL modifications method "The language is set from content" is not supported
+5. Uses strict typing and modern PHP 8.4 features
+
+## Installation
+
+### Via Composer
+```bash
+composer require hyyan/woo-poly-integration
+

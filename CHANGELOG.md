@@ -8,15 +8,15 @@
 * Added parameter types for all methods
 * Improved null value handling
 * Enhanced code security with:
-        wp_kses_post for HTML filtering
-        esc_url for URL filtering
-        esc_html for text output
-        esc_attr for attribute filtering
+        * wp_kses_post for HTML filtering
+        * esc_url for URL filtering
+        * esc_html for text output
+        * esc_attr for attribute filtering
 * Modernized array syntax to []
 * Improved code organization:
-        Split long methods into smaller ones
-        Added specialized helper methods
-        Enhanced code readability
+        * Split long methods into smaller ones
+        * Added specialized helper methods
+        * Enhanced code readability
 * Updated Travis CI configuration for PHP 8.4 support
 * Updated NetBeans project configuration for PHP 8.4 support
 

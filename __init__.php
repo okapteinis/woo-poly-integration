@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * Plugin Name: Hyyan WooCommerce Polylang Integration
  * Plugin URI: https://github.com/hyyan/woo-poly-integration/
@@ -10,21 +12,16 @@
  * Domain Path: /languages
  * GitHub Plugin URI: hyyan/woo-poly-integration
  * License: MIT License
- * Version: 1.5.1
+ * Version: 1.6.0
  * Requires At Least: 5.4
- * Tested Up To: 5.7.1
+ * Tested Up To: 6.4
  * WC requires at least: 4.0.0
- * WC tested up to: 5.3.0
- * Requires PHP: 7.0
+ * WC tested up to: 8.4.0
+ * Requires PHP: 8.4
  */
 
-/**
- * This file is part of the hyyan/woo-poly-integration plugin.
- * (c) Hyyan Abo Fakher <hyyanaf@gmail.com>.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
+namespace Hyyan\WPI;
+
 if (!defined('ABSPATH')) {
     exit('restricted access');
 }
@@ -36,20 +33,19 @@ require_once ABSPATH . 'wp-admin/includes/plugin.php';
 require_once __DIR__ . '/vendor/class.settings-api.php';
 require_once __DIR__ . '/src/Hyyan/WPI/Autoloader.php';
 
-/* register the autoloader */
-new Hyyan\WPI\Autoloader(__DIR__ . '/src/');
+// Register the autoloader
+new Autoloader(__DIR__ . '/src/');
 
-/* bootstrap the plugin */
-new Hyyan\WPI\Plugin();
+// Bootstrap the plugin
+new Plugin();
 
-
-/*
- * called when plugin is activated in settings, plugins
+/**
+ * Plugin activation handler
  */
-function onActivate() {
-	update_option( 'wpi_wcpagecheck_passed', false );
-	update_option( 'hyyan-wpi-flash-messages', '' );
+function onActivate(): void
+{
+    update_option('wpi_wcpagecheck_passed', false);
+    update_option('hyyan-wpi-flash-messages', '');
 }
 
-register_activation_hook( __FILE__, 'onActivate' );
-
+register_activation_hook(__FILE__, 'onActivate');

@@ -1,27 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI;
 
-use WC_Payment_Gateways;
 use WC_Payment_Gateway;
+use WC_Payment_Gateways;
 
 class Gateways
 {
-    private array $enabledGateways;
+    protected array $enabledGateways;
 
     public function __construct()
     {
-        add_filter('woocommerce_paypal_args', [$this, 'setPaypalLocalCode']);
-        add_action('wp_loaded', [$this, 'loadOnWpLoaded']);
-        add_filter('woocommerce_gateway_title', [$this, 'translatePaymentGatewayTitle'], 10, 2);
-        add_filter('woocommerce_gateway_description', [$this, 'translatePaymentGatewayDescription'], 10, 2);
-    }
-
-    public function loadOnWpLoaded(): void
-    {
         $this->enabledGateways = $this->getEnabledPaymentGateways();
         $this->registerGatewayStringsForTranslation();
-        $this->loadPaymentGatewaysExtentions();
+        $this->loadPaymentGatewaysExtensions();
     }
 
     public function setPaypalLocalCode(array $args): array
@@ -34,7 +28,6 @@ class Gateways
     {
         $enabledGateways = [];
         $gateways = WC_Payment_Gateways::instance();
-        
         if (count($gateways->payment_gateways) > 0) {
             foreach ($gateways->payment_gateways() as $gateway) {
                 if ($this->isEnabled($gateway)) {
@@ -42,7 +35,6 @@ class Gateways
                 }
             }
         }
-        
         return $enabledGateways;
     }
 
@@ -51,10 +43,9 @@ class Gateways
         return $gateway->enabled === 'yes';
     }
 
-    public function loadPaymentGatewaysExtentions(): void
+    public function loadPaymentGatewaysExtensions(): void
     {
         $this->removeGatewayActions();
-
         foreach ($this->enabledGateways as $gateway) {
             match($gateway->id) {
                 'bacs' => new Gateways\GatewayBACS(),
@@ -62,9 +53,8 @@ class Gateways
                 'cod' => new Gateways\GatewayCOD(),
                 default => null
             };
-
             do_action(
-                HooksInterface::GATEWAY_LOAD_EXTENTION . $gateway->id,
+                HooksInterface::GATEWAY_LOAD_EXTENSION . $gateway->id,
                 $gateway,
                 $this->enabledGateways
             );
@@ -74,13 +64,11 @@ class Gateways
     public function removeGatewayActions(): void
     {
         $default_gateways = ['bacs', 'cheque', 'cod'];
-        
         foreach ($this->enabledGateways as $gateway) {
             if (in_array($gateway->id, $default_gateways, true)) {
                 remove_action('woocommerce_email_before_order_table', [$gateway, 'email_instructions']);
                 remove_action('woocommerce_thankyou_' . $gateway->id, [$gateway, 'thankyou_page']);
             }
-            
             if ($gateway->id === 'bacs') {
                 remove_action(
                     'woocommerce_update_options_payment_gateways_' . $gateway->id,
@@ -101,7 +89,6 @@ class Gateways
             if (empty($settings)) {
                 continue;
             }
-
             $this->registerGatewayStrings($gateway, $settings);
         }
     }

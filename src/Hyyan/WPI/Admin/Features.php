@@ -1,23 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI\Admin;
 
-use Hyyan\WPI\Utilities;
-
-class Features extends AbstractSettings
+class Features
 {
-    public static function getID(): string
+    public const ID = 'wpi-features';
+
+    public function getID(): string
     {
-        return 'wpi-features';
+        return self::ID;
     }
 
-    protected function doGetSections(): array
+    protected function getSections(): array
     {
         return [
             [
+                'id' => self::ID,
                 'title' => __('Features', 'woo-poly-integration'),
                 'desc' => sprintf(
-                    '%s %s <a target="_blank" href="https://github.com/hyyan/woo-poly-integration/wiki/Settings---Features">%s</a>.',
+                    '%s %s %s.',
                     __('The section will allow you to Enable/Disable Plugin Features.', 'woo-poly-integration'),
                     __('For more information please see:', 'woo-poly-integration'),
                     __('documentation pages', 'woo-poly-integration')
@@ -26,7 +29,7 @@ class Features extends AbstractSettings
         ];
     }
 
-    protected function doGetFields(): array
+    protected function getFields(): array
     {
         return [
             [
@@ -43,7 +46,6 @@ class Features extends AbstractSettings
                 'label' => __('Emails', 'woo-poly-integration'),
                 'desc' => __('Use order language whenever WooCommerce sends order emails', 'woo-poly-integration'),
             ],
-            // ... citi lauki ar līdzīgu struktūru
             [
                 'name' => 'new-translation-defaults',
                 'type' => 'radio',
@@ -53,8 +55,8 @@ class Features extends AbstractSettings
                 'options' => [
                     '0' => 'Blank Text',
                     '1' => __('Copy Source', 'woo-poly-integration'),
-                    '2' => __('Translate Source', 'woo-poly-integration') . ' (coming soon..  until available will use Copy Source) ',
-                ]
+                    '2' => __('Translate Source', 'woo-poly-integration') . ' (coming soon.. until available will use Copy Source) ',
+                ],
             ],
             [
                 'name' => 'checkpages',

@@ -1,5 +1,26 @@
 # Changelog
 
+###  1.6
+
+* Added PHP 8.4 support
+* Added strict type declarations (strict_types=1)
+* Added return types for all methods
+* Added parameter types for all methods
+* Improved null value handling
+* Enhanced code security with:
+        wp_kses_post for HTML filtering
+        esc_url for URL filtering
+        esc_html for text output
+        esc_attr for attribute filtering
+* Modernized array syntax to []
+* Improved code organization:
+        Split long methods into smaller ones
+        Added specialized helper methods
+        Enhanced code readability
+* Updated Travis CI configuration for PHP 8.4 support
+* Updated NetBeans project configuration for PHP 8.4 support
+
+
 ###  1.5.1
 * [fixes #545 keep fields unlocked if products does not exist in default language props mrleemon](https://github.com/hyyan/woo-poly-integration/issues/545)
 * [fixes #549 Quick edit Product synchronisation issues](https://github.com/hyyan/woo-poly-integration/issues/549)

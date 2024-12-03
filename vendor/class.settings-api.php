@@ -2,12 +2,9 @@
 
 declare(strict_types=1);
 
-class WeDevs_Settings_API
+class Settings_API
 {
-    /** @var array<string,array> */
     protected array $settings_sections = [];
-    
-    /** @var array<string,array> */
     protected array $settings_fields = [];
 
     public function __construct()
@@ -49,7 +46,6 @@ class WeDevs_Settings_API
             'desc' => '',
             'type' => 'text'
         ];
-        
         $this->settings_fields[$section][] = wp_parse_args($field, $defaults);
         return $this;
     }
@@ -83,11 +79,10 @@ class WeDevs_Settings_API
         if (!empty($section['desc'])) {
             return function() use ($section) {
                 echo wp_kses_post(
-                    sprintf('<div class="inside">%s</div>', $section['desc'])
+                    sprintf('%s', $section['desc'])
                 );
             };
         }
-
         return $section['callback'] ?? null;
     }
 
@@ -96,11 +91,8 @@ class WeDevs_Settings_API
         foreach ($this->settings_fields as $section => $field) {
             foreach ($field as $option) {
                 $type = $option['type'] ?? 'text';
-                $callback = $option['callback'] ?? 
-                    [$this, 'callback_' . $type];
-
+                $callback = $option['callback'] ?? [$this, 'callback_' . $type];
                 $args = $this->prepare_field_args($option, $section);
-                
                 add_settings_field(
                     "{$section}[{$option['name']}]",
                     $option['label'] ?? '',
@@ -133,6 +125,4 @@ class WeDevs_Settings_API
             'step' => $option['step'] ?? '',
         ];
     }
-
-    // ... [pārējās metodes ar līdzīgām izmaiņām]
 }

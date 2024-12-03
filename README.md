@@ -1,54 +1,53 @@
 # WordPress WooCommerce Polylang Integration
 
-[![project status](http://www.repostatus.org/badges/latest/active.svg)](http://www.gitchecker.com/hyyan/woo-poly-integration)
-[![Latest Stable Version](https://poser.pugx.org/hyyan/woo-poly-integration/v/stable.svg)](https://packagist.org/packages/hyyan/woo-poly-integration)
-[![License](https://poser.pugx.org/hyyan/woo-poly-integration/license.svg)](https://packagist.org/packages/hyyan/woo-poly-integration)
+[![Build Status](https://travis-ci.org/hyyan/woo-poly-integration.svg?branch=master)](https://travis-ci.org/hyyan/woo-poly-integration)
+[![GitHub release](https://img.shields.io/github/release/hyyan/woo-poly-integration.svg)](https://github.com/hyyan/woo-poly-integration/releases)
 
-This plugin makes it possible to run multilingual e-commerce sites using WooCommerce and Polylang. It makes products and store pages translatable, lets visitors switch languages and order products in their language.
+Integrates WooCommerce with Polylang
 
-[Read the full docs](https://github.com/hyyan/woo-poly-integration/wiki)
+## Features
+
+- [√] Auto Download Woocommerce Translation Files
+- [√] Page Translation
+- [√] Endpoints Translation
+- [√] Product Translation
+  - [√] Categories
+  - [√] Tags
+  - [√] Attributes
+  - [√] Shipping Classes
+  - [√] Meta Synchronization
+  - [√] Variation Product
+  - [√] Product Gallery
+- [√] Order Translation
+- [√] Stock Synchronization
+- [√] Cart Synchronization
+- [√] Coupon Synchronization
+- [√] Emails
+- [√] Reports
+  - [√] Filter by Language
+  - [√] Combine Data
 
 ## Requirements
 
-- PHP 8.4 or higher
-- WordPress 6.0 or higher
-- WooCommerce 8.4 or higher
-- Polylang 3.0 or higher
-
-## Main Changes
-
-1. **Updated Requirements**:
-- Added PHP 8.4 requirement
-- Updated WordPress and WooCommerce version requirements
-
-2. **Added Technical Details**:
-- Mentioned strict typing support
-- Added modern PHP features note
-- Updated development section
-
-3. **Improved Structure**:
-- Better organized requirements section
-- Clearer installation instructions
-- Added development notes
-
-4. **Removed Outdated Content**:
-- Removed outdated badges
-- Streamlined feature list
-- Updated technical requirements
-
-These changes reflect the modernization of the codebase and its compatibility with PHP 8.4.
-
-## Important Notes
-
-1. The plugin requires PHP 8.4 or above
-2. Developed in sync with latest versions of Polylang and WooCommerce
-3. Variable products support will disallow changing the default language
-4. Polylang URL modifications method "The language is set from content" is not supported
-5. Uses strict typing and modern PHP 8.4 features
+- PHP >= 8.3
+- WordPress >= 6.0
+- WooCommerce >= 3.0.0
+- Polylang >= 2.0.0
 
 ## Installation
 
-### Via Composer
-```bash
-composer require hyyan/woo-poly-integration
+1. Download the plugin from [WordPress Plugin Repository](https://wordpress.org/plugins/woo-poly-integration/)
+2. Upload the plugin to WordPress dashboard
+3. Activate the plugin from WordPress dashboard
 
+## Support
+
+Please direct support questions to the [WordPress Plugin Forum](https://wordpress.org/support/plugin/woo-poly-integration/)
+
+## Contributing
+
+Everyone is welcome to help contribute and improve this plugin.
+
+## License
+
+The plugin is released under the [GNU General Public License v2.0](http://www.gnu.org/licenses/gpl-2.0.html).

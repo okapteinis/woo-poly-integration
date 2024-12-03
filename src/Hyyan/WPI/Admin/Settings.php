@@ -1,24 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI\Admin;
 
 use Hyyan\WPI\HooksInterface;
 use Hyyan\WPI\Plugin;
-use WeDevs_Settings_API;
 
-class Settings extends WeDevs_Settings_API
+class Settings
 {
     public function __construct()
-    {
-        parent::__construct();
-        add_action('admin_init', [$this, 'init']);
-        add_action('admin_menu', [$this, 'registerMenu']);
-
-        new Features();
-        new MetasList();
-    }
-
-    public function init(): void
     {
         $this->set_sections($this->getSections());
         $this->set_fields($this->getFields());
@@ -60,7 +51,6 @@ class Settings extends WeDevs_Settings_API
     public static function getOption(string $option, string $section, string $default = ''): mixed
     {
         $options = get_option($section);
-
         if (!empty($options[$option])) {
             return $options[$option];
         }

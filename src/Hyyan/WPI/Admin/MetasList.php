@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI\Admin;
 
 use Hyyan\WPI\Product\Meta;
@@ -8,7 +10,7 @@ class MetasList extends AbstractSettings
 {
     public static function getID(): string
     {
-        return 'wpi-metas-list';
+        return 'wpi-metas';
     }
 
     protected function doGetSections(): array
@@ -17,14 +19,14 @@ class MetasList extends AbstractSettings
             [
                 'title' => __('Metas List', 'woo-poly-integration'),
                 'desc' => sprintf(
-                    '%s %s <a target="_blank" href="https://github.com/hyyan/woo-poly-integration/wiki/Settings-Metas">%s</a>.',
+                    '%s %s %s.',
                     __(
-                        'The section will allow you to control which metas should be
-                         synced between products and their translations. The default
-                         values are appropriate for the large majority of the users.
-                         It is safe to ignore these settings if you do not understand
-                         their meaning. Please ignore this section if you do not
-                         understand the meaning of this.',
+                        'The section will allow you to control which metas should be ' .
+                        'synced between products and their translations. The default ' .
+                        'values are appropriate for the large majority of the users. ' .
+                        'It is safe to ignore these settings if you do not understand ' .
+                        'their meaning. Please ignore this section if you do not ' .
+                        'understand the meaning of this.',
                         'woo-poly-integration'
                     ),
                     __('For more information please see:', 'woo-poly-integration'),
@@ -38,7 +40,6 @@ class MetasList extends AbstractSettings
     {
         $metas = Meta::getProductMetaToCopy([], false);
         $fields = [];
-
         foreach ($metas as $ID => $value) {
             $fields[] = [
                 'name' => $ID,
@@ -52,7 +53,6 @@ class MetasList extends AbstractSettings
                 ),
             ];
         }
-
         return $fields;
     }
 

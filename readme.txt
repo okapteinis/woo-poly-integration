@@ -6,8 +6,8 @@ Requires at least: 6.0
 Stable tag: 1.6.0
 Tested Up To: 6.4
 WC requires at least: 4.0.0
-WC tested up to: 8.4.0
-Requires PHP: 8.4
+WC tested up to: 8.3.0
+Requires PHP: 8.3
 License: MIT
 License URI: https://github.com/hyyan/woo-poly-integration/blob/master/LICENSE
 

@@ -4,60 +4,47 @@ declare(strict_types=1);
 
 namespace Hyyan\WPI\Admin;
 
-use Hyyan\WPI\Product\Meta;
+use Hyyan\WPI\HooksInterface;
 
 class MetasList extends AbstractSettings
 {
     public static function getID(): string
     {
-        return 'wpi-metas';
+        return 'wpi-metas-list';
     }
 
     protected function doGetSections(): array
     {
-        return [
-            [
-                'title' => __('Metas List', 'woo-poly-integration'),
-                'desc' => sprintf(
-                    '%s %s %s.',
-                    __(
-                        'The section will allow you to control which metas should be ' .
-                        'synced between products and their translations. The default ' .
-                        'values are appropriate for the large majority of the users. ' .
-                        'It is safe to ignore these settings if you do not understand ' .
-                        'their meaning. Please ignore this section if you do not ' .
-                        'understand the meaning of this.',
-                        'woo-poly-integration'
-                    ),
-                    __('For more information please see:', 'woo-poly-integration'),
-                    __('documentation pages', 'woo-poly-integration')
-                ),
-            ],
-        ];
+        return apply_filters(HooksInterface::SETTINGS_SECTIONS_FILTER, []);
     }
 
     protected function doGetFields(): array
     {
-        $metas = Meta::getProductMetaToCopy([], false);
-        $fields = [];
-        foreach ($metas as $ID => $value) {
-            $fields[] = [
-                'name' => $ID,
-                'label' => $value['name'],
-                'desc' => $value['desc'],
-                'type' => 'multicheck',
-                'default' => array_combine($value['metas'], $value['metas']),
-                'options' => array_combine(
-                    $value['metas'],
-                    array_map([__CLASS__, 'normalize'], $value['metas'])
-                ),
-            ];
-        }
-        return $fields;
+        return apply_filters(HooksInterface::SETTINGS_FIELDS_FILTER, []);
     }
 
-    public static function normalize(string $string): string
+    protected function dorender(array $sections, array $fields): void
     {
-        return ucwords(trim(str_replace('_', ' ', $string)));
+        $this->addSections($sections);
+        $this->addFields($fields);
+    }
+
+    protected function addSections(array $sections): void
+    {
+        $sections[] = [
+            'id' => static::getID(),
+            'title' => __('Metas List', 'woo-poly-integration'),
+            'desc' => __(
+                'The section will allow you to control which metas should be synced',
+                'woo-poly-integration'
+            )
+        ];
+
+        parent::addSections($sections);
+    }
+
+    protected function addFields(array $fields): void
+    {
+        parent::addFields($fields, static::getID());
     }
 }

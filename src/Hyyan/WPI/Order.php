@@ -1,29 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI;
 
-use Hyyan\WPI\Utilities;
 use WC_Product;
 
 class Order
 {
     public function __construct()
     {
+        $this->limitPolylangFeaturesForOrders();
         add_filter('pll_get_post_types', [$this, 'manageOrderTranslation']);
-        add_action('woocommerce_checkout_update_order_meta', [$this, 'saveOrderLanguage']);
+        add_action('woocommerce_new_order', [$this, 'saveOrderLanguage']);
+        add_filter('woocommerce_order_get_items', [$this, 'translateProductsInOrdersDetails']);
         add_filter('woocommerce_my_account_my_orders_query', [$this, 'correctMyAccountOrderQuery']);
-        add_filter('woocommerce_order_item_product', [$this, 'translateProductsInOrdersDetails'], 10, 3);
-
-        if (is_admin()) {
-            $this->limitPolylangFeaturesForOrders();
-        }
     }
 
     public function manageOrderTranslation(array $types): array
     {
         $options = get_option('polylang');
         $postTypes = $options['post_types'] ?? [];
-        
+
         if (!in_array('shop_order', $postTypes, true)) {
             $options['post_types'][] = 'shop_order';
             update_option('polylang', $options);
@@ -46,7 +44,7 @@ class Order
         if (!$product) {
             return null;
         }
-        
+
         return Utilities::getProductTranslationByObject($product);
     }
 
@@ -58,7 +56,7 @@ class Order
             10,
             2
         );
-        
+
         $query['lang'] = implode(',', pll_languages_list());
         return $query;
     }
@@ -75,7 +73,6 @@ class Order
     {
         add_action('current_screen', function (): void {
             $screen = function_exists('get_current_screen') ? get_current_screen() : false;
-
             if ($screen && $screen->post_type === 'shop_order') {
                 add_action('admin_print_scripts', function (): void {
                     $jsID = 'order-translations-buttons';

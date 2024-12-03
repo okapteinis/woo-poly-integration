@@ -1,24 +1,24 @@
 # Changelog
 
-###  1.6
+## 1.6.0 (2024-12-03)
 
-* Added PHP 8.4 support
-* Added strict type declarations (strict_types=1)
-* Added return types for all methods
-* Added parameter types for all methods
-* Improved null value handling
-* Enhanced code security with:
-        1) wp_kses_post for HTML filtering
-        2) esc_url for URL filtering
-        3) esc_html for text output
-        4) esc_attr for attribute filtering
-* Modernized array syntax to []
-* Improved code organization:
-        1) Split long methods into smaller ones
-        2) Added specialized helper methods
-        3) Enhanced code readability
-* Updated Travis CI configuration for PHP 8.4 support
-* Updated NetBeans project configuration for PHP 8.4 support
+### Added
+- Added support for PHP 8.3 and PHP 8.4
+- Added strict type declarations to all PHP files
+- Added return type hints to all methods
+- Added parameter type hints to all methods
+- Added property type hints
+- Added union types where needed (e.g., WC_Product|false)
+
+### Changed
+- Updated Travis CI configuration to support PHP 8.3 and 8.4
+- Modernized array syntax throughout the codebase
+- Improved code formatting and readability
+- Updated use statements for better code organization
+
+### Fixed
+- Fixed potential type-related issues for PHP 8.3 and 8.4 compatibility
+- Fixed null coalescing operator usage for better null handling
 
 
 ###  1.5.1

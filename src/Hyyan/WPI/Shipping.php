@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI;
 
 use Hyyan\WPI\Admin\Settings;
 use Hyyan\WPI\Admin\Features;
 use Hyyan\WPI\Utilities;
+use WC_Order;
 use WC_Shipping_Zone;
 use WC_Shipping_Zones;
-use WC_Order;
 
 class Shipping
 {
@@ -21,7 +23,7 @@ class Shipping
     public function disableSettings(): bool
     {
         $currentScreen = function_exists('get_current_screen') ? get_current_screen() : false;
-        if (!$currentScreen || $currentScreen->id !== 'settings_page_hyyan-wpi') {
+        if ($currentScreen && $currentScreen->id !== 'settings_page_hyyan-wpi') {
             return false;
         }
 
@@ -38,22 +40,22 @@ class Shipping
 
     private function getActiveShippingMethods(): array
     {
-        $activeMethods = [];
-        $shippingMethods = $this->getZonesShippingMethods();
+        $active_methods = [];
+        $shipping_methods = $this->getZonesShippingMethods();
 
-        foreach ($shippingMethods as $id => $shippingMethod) {
-            if (isset($shippingMethod->enabled) && $shippingMethod->enabled === 'yes') {
-                $activeMethods[$id] = $shippingMethod->plugin_id;
+        foreach ($shipping_methods as $id => $shipping_method) {
+            if (isset($shipping_method->enabled) && 'yes' === $shipping_method->enabled) {
+                $active_methods[$id] = $shipping_method->plugin_id;
             }
         }
 
-        return $activeMethods;
+        return $active_methods;
     }
 
     public function getZonesShippingMethods(): array
     {
         $zones = [];
-        $shippingMethods = [];
+        $shipping_methods = [];
 
         $zone = new WC_Shipping_Zone();
         $zones[$zone->get_id()] = [
@@ -65,12 +67,12 @@ class Shipping
         $zones = array_merge($zones, WC_Shipping_Zones::get_zones());
 
         foreach ($zones as $zone) {
-            foreach ($zone['shipping_methods'] as $instanceId => $shippingMethod) {
-                $shippingMethods[$shippingMethod->id . '_' . $instanceId] = $shippingMethod;
+            foreach ($zone['shipping_methods'] as $instance_id => $shipping_method) {
+                $shipping_methods[$shipping_method->id . '_' . $instance_id] = $shipping_method;
             }
         }
 
-        return $shippingMethods;
+        return $shipping_methods;
     }
 
     public function registerShippingStringsForTranslation(): void
@@ -79,12 +81,12 @@ class Shipping
             return;
         }
 
-        $shippingMethods = $this->getActiveShippingMethods();
-        foreach ($shippingMethods as $methodId => $pluginId) {
-            $setting = get_option($pluginId . $methodId . '_settings');
+        $shipping_methods = $this->getActiveShippingMethods();
+        foreach ($shipping_methods as $method_id => $plugin_id) {
+            $setting = get_option($plugin_id . $method_id . '_settings');
             if ($setting && isset($setting['title'])) {
                 pll_register_string(
-                    $pluginId . $methodId . '_shipping_method',
+                    $plugin_id . $method_id . '_shipping_method',
                     $setting['title'],
                     __('WooCommerce Shipping Methods', 'woo-poly-integration')
                 );
@@ -99,13 +101,16 @@ class Shipping
 
     public function translateOrderShippingMethod(string $implode, WC_Order $instance): string
     {
-        $shippingMethods = explode(', ', $implode);
-        $translated = array_map(
-            fn($shipping) => function_exists('pll__') ? 
-                pll__($shipping) : 
-                __($shipping, 'woocommerce'),
-            $shippingMethods
-        );
+        $shipping_methods = explode(', ', $implode);
+        $translated = [];
+
+        foreach ($shipping_methods as $shipping) {
+            if (function_exists('pll__')) {
+                $translated[] = pll__($shipping);
+            } else {
+                $translated[] = __($shipping, 'woocommerce');
+            }
+        }
 
         return implode(', ', $translated);
     }

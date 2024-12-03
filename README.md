@@ -1,8 +1,5 @@
 # WordPress WooCommerce Polylang Integration
 
-[![Build Status](https://travis-ci.org/hyyan/woo-poly-integration.svg?branch=master)](https://travis-ci.org/hyyan/woo-poly-integration)
-[![GitHub release](https://img.shields.io/github/release/hyyan/woo-poly-integration.svg)](https://github.com/hyyan/woo-poly-integration/releases)
-
 Integrates WooCommerce with Polylang
 
 ## Features

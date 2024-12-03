@@ -1,9 +1,13 @@
 install: true
+
 language: php
+
 dist: jammy
+
 sudo: false
 
 php:
+  - 8.3
   - 8.4
 
 before_script:

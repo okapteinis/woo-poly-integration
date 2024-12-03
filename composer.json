@@ -26,12 +26,12 @@
         "gwp"
     ],
     "require": {
-        "php": ">=8.4.0",
+        "php": ">=8.3.0",
         "composer/installers": "^2.0"
     },
     "config": {
         "platform": {
-            "php": "8.4.0"
+            "php": "8.3.0"
         }
     }
 }

@@ -1,17 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI;
 
-/**
- * Plugin Namespace Autoloader.
- */
-final class Autoloader
+class Autoloader
 {
-    private string $base;
+    protected string $base;
 
-    /**
-     * @throws \Exception
-     */
     public function __construct(string $base)
     {
         $this->base = $base;
@@ -25,7 +21,6 @@ final class Autoloader
         }
 
         $filename = $this->base . str_replace('\\', '/', $className) . '.php';
-        
         if (file_exists($filename)) {
             require_once $filename;
             return class_exists($className) || interface_exists($className);

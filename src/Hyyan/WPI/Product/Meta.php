@@ -11,7 +11,6 @@ use Hyyan\WPI\Admin\Features;
 use Hyyan\WPI\Admin\MetasList;
 use Hyyan\WPI\Taxonomies\Attributes;
 use WC_Product;
-use PLL_Language;
 use WP_Post;
 use WP_Term;
 
@@ -31,84 +30,6 @@ class Meta
         if ('on' === Settings::getOption('attributes', Features::getID(), 'on')) {
             add_action('woocommerce_attribute_added', [$this, 'newProductAttribute'], 10, 2);
         }
-    }
-
-    public static function getProductTranslationsArrayByID(int $ID, bool $excludeDefault = false): array
-    {
-        global $polylang;
-        $IDS = $polylang->model->post->get_translations($ID);
-
-        if ($excludeDefault) {
-            unset($IDS[pll_default_language()]);
-        }
-
-        return $IDS;
-    }
-
-    public static function getProductTranslationsArrayByObject(WC_Product $product, bool $excludeDefault = false): array
-    {
-        return static::getProductTranslationsArrayByID($product->get_id(), $excludeDefault);
-    }
-
-    public static function getProductTranslationByID(int $ID, string $slug = ''): ?WC_Product
-    {
-        $product = wc_get_product($ID);
-        return $product ? static::getProductTranslationByObject($product, $slug) : null;
-    }
-
-    public static function getProductTranslationByObject(WC_Product $product, string $slug = ''): ?WC_Product
-    {
-        $productTranslationID = pll_get_post($product->get_id(), $slug);
-        if ($productTranslationID) {
-            $translated = wc_get_product($productTranslationID);
-            return $translated ?: $product;
-        }
-        return $product;
-    }
-
-    public static function getLanguageEntity(string $slug): ?PLL_Language
-    {
-        global $polylang;
-        foreach ($polylang->model->get_languages_list() as $lang) {
-            if ($lang->slug === $slug) {
-                return $lang;
-            }
-        }
-        return null;
-    }
-
-    public static function getCurrentUrl(): string
-    {
-        return sprintf(
-            '%s://%s%s',
-            is_ssl() ? 'https' : 'http',
-            $_SERVER['HTTP_HOST'],
-            $_SERVER['REQUEST_URI']
-        );
-    }
-
-    public static function jsScriptWrapper(
-        string $ID,
-        string $code,
-        bool $jquery = true,
-        bool $return = false
-    ): ?string {
-        $prefix = 'hyyan-wpi-';
-        $header = sprintf('/* %s */', $prefix . $ID);
-        
-        $script = sprintf(
-            '%s%s%s',
-            $header,
-            PHP_EOL,
-            $jquery ? sprintf('jQuery(function($){%s});', $code) : $code
-        );
-
-        if ($return) {
-            return $script;
-        }
-
-        printf('<script type="text/javascript">%s</script>', $script);
-        return null;
     }
 
     public function handleNewProduct(int $post_id, WP_Post $post, bool $update): void
@@ -139,249 +60,221 @@ class Meta
         }
     }
 
-    public static function wpi_filter_pll_metas(array $keys, bool $sync, int $from, int $to, string $lang): array
+    public static function getProductMetaToCopy(array $metas = [], bool $flat = true): array
     {
-        static $wpi_keys;
-        if (!$wpi_keys) {
-            $wpi_keys = static::getProductMetaToCopy($keys);
-            $wpi_keys = array_diff($wpi_keys, ['_default_attributes']);
+        $default = apply_filters(HooksInterface::PRODUCT_META_SYNC_FILTER, [
+            'general' => [
+                'name' => __('General Metas', 'woo-poly-integration'),
+                'desc' => __('General Metas', 'woo-poly-integration'),
+                'metas' => [
+                    'product-type',
+                    '_virtual',
+                    '_sku',
+                    '_upsell_ids',
+                    '_crosssell_ids',
+                    '_children',
+                    '_product_image_gallery',
+                    'total_sales',
+                    '_translation_porduct_type',
+                    '_visibility',
+                ],
+            ],
+            'polylang' => [
+                'name' => __('Polylang Metas', 'woo-poly-integration'),
+                'desc' => __('To control these values please check ', 'woo-poly-integration') .
+                    ' ' . __('Polylang admin menu "Languages, Settings"') . ' ' .
+                    __('Synchronisation section values for Page order, Featured image, Comment Status', 'woo-poly-integration'),
+                'metas' => [
+                    'menu_order',
+                    '_thumbnail_id',
+                    'comment_status',
+                ],
+            ],
+            'stock' => [
+                'name' => __('Stock Metas', 'woo-poly-integration'),
+                'desc' => __('Stock Metas: see also Features, Stock Sync', 'woo-poly-integration'),
+                'metas' => [
+                    '_manage_stock',
+                    '_stock',
+                    '_backorders',
+                    '_stock_status',
+                    '_low_stock_amount',
+                    '_sold_individually',
+                ],
+            ],
+            'shipping' => [
+                'name' => __('ShippingClass Metas', 'woo-poly-integration'),
+                'desc' => __('Shipping size and weight metas and Shipping class taxonomy', 'woo-poly-integration'),
+                'metas' => [
+                    '_weight',
+                    '_length',
+                    '_width',
+                    '_height',
+                    'product_shipping_class',
+                ],
+            ],
+            'Attributes' => [
+                'name' => __('Attributes Metas', 'woo-poly-integration'),
+                'desc' => __('To select individual Product Attributes for translation or synchronization, turn on here and check', 'woo-poly-integration') .
+                    ' ' . __('Polylang admin menu "Languages, Settings"') . ' ' .
+                    __(' "Custom post types and Taxonomies", "Custom Taxonomies"', 'woo-poly-integration'),
+                'metas' => [
+                    '_product_attributes',
+                    '_custom_product_attributes',
+                    '_default_attributes',
+                ],
+            ],
+            'Downloadable' => [
+                'name' => __('Downloadable Metas', 'woo-poly-integration'),
+                'desc' => __('Downloadable product Meta', 'woo-poly-integration'),
+                'metas' => [
+                    '_downloadable',
+                    '_downloadable_files',
+                    '_download_limit',
+                    '_download_expiry',
+                    '_download_type',
+                ],
+            ],
+            'Taxes' => [
+                'name' => __('Taxes Metas', 'woo-poly-integration'),
+                'desc' => __('Taxes Metas', 'woo-poly-integration'),
+                'metas' => [
+                    '_tax_status',
+                    '_tax_class',
+                ],
+            ],
+            'price' => [
+                'name' => __('Price Metas', 'woo-poly-integration'),
+                'desc' => __('Note the last price field is the final price taking into account the effect of sale price ', 'woo-poly-integration'),
+                'metas' => [
+                    '_regular_price',
+                    '_sale_price',
+                    '_sale_price_dates_from',
+                    '_sale_price_dates_to',
+                    '_price',
+                ],
+            ],
+        ]);
+
+        if (false === $flat) {
+            return $default;
         }
-        return $wpi_keys;
+
+        foreach ($default as $ID => $value) {
+            $metas = array_merge($metas, Settings::getOption(
+                $ID,
+                MetasList::getID(),
+                $value['metas']
+            ));
+        }
+
+        return array_values($metas);
     }
 
-    public function saveQuickEdit(WC_Product $product): void
+    public static function getDisabledProductMetaToCopy(array $metas = []): array
     {
-        $this->syncTaxonomiesAndProductAttributes($product->get_id(), $product, true);
+        foreach (static::getProductMetaToCopy([], false) as $group) {
+            $metas = array_merge($metas, $group['metas']);
+        }
+
+        return apply_filters(
+            HooksInterface::PRODUCT_DISABLED_META_SYNC_FILTER,
+            array_values(array_diff($metas, static::getProductMetaToCopy()))
+        );
     }
 
-    public function syncProductMeta(int $from, int $to, string $lang, bool $sync = true): void
+    public function addFieldsLocker(): bool
     {
-        PLL()->sync->post_metas->copy($from, $to, $lang, $sync);
-    }
-
-    public function handleProductScreen(): bool
-    {
-        $currentScreen = function_exists('get_current_screen') ? get_current_screen() : false;
-        if ($currentScreen && $currentScreen->post_type !== 'product') {
+        if ('off' === Settings::getOption('fields-locker', Features::getID(), 'on')) {
             return false;
         }
 
-        add_action('woocommerce_after_product_object_save', [$this, 'syncTaxonomiesAndProductAttributesAfterProductUpdate'], 5, 2);
-        
-        $ID = false;
-        $disable = false;
+        $metas = static::getProductMetaToCopy();
+        $selectors = ['.insert'];
 
-        if (isset($_GET['post'])) {
-            $ID = absint($_GET['post']);
-            $disable = $ID && (pll_get_post_language($ID) != pll_default_language())
-                && pll_get_post($ID, pll_default_language());
-        } elseif (isset($_GET['new_lang']) || $currentScreen->base == 'edit') {
-            $disable = isset($_GET['new_lang']) && (esc_attr($_GET['new_lang']) != pll_default_language());
-            $ID = isset($_GET['from_post']) ? absint($_GET['from_post']) : false;
+        if (in_array('_product_attributes', $metas)) {
+            if (in_array('_custom_product_attributes', $metas)) {
+                $selectors[] = '#product_attributes :input';
+                $selectors[] = '#product_attributes .select2-selection';
+            } else {
+                $selectors[] = '#product_attributes div.taxonomy :input';
+                $selectors[] = '#product_attributes .select2-selection';
+            }
+        } elseif (in_array('_custom_product_attributes', $metas)) {
+            $selectors[] = '#product_attributes div.woocommerce_attribute:not(.taxonomy) :input';
         }
 
-        if ($ID) {
-            $this->addProductTypeMeta($ID);
-        }
+        $selectors = apply_filters(HooksInterface::FIELDS_LOCKER_SELECTORS_FILTER, $selectors);
+        $jsID = 'product-fields-locker';
+        $code = sprintf(
+            'function hyyan_wpi_lockFields(){ '
+            . ' var disabled = %s;'
+            . 'var disabledSelectors = %s;'
+            . 'var metaSelectors = "";'
+            . 'for (var i = 0; i < disabled.length; i++) {'
+            . ' metaSelectors += (","'
+            . ' + "." + disabled[i] + ","'
+            . ' + "#" + disabled[i] + ","'
+            . ' + "*[name^=\'"+disabled[i]+"\']"'
+            . ' )'
+            . ' }'
+            . ' $(disabledSelectors + metaSelectors)'
+            . ' .off("click")'
+            . ' .on("click", function (e) {e.preventDefault()})'
+            . ' .css({'
+            . ' opacity: .5,'
+            . ' \'pointer-events\': \'none\','
+            . ' cursor: \'not-allowed\''
+            . ' });'
+            . '};'
+            . 'hyyan_wpi_lockFields();'
+            . '$(document).ajaxComplete(function(){'
+            . ' hyyan_wpi_lockFields(); '
+            . '});',
+            json_encode($metas),
+            !empty($selectors) ? json_encode(implode(',', $selectors)) : [rand()]
+        );
 
-        if ($disable) {
-            add_action('admin_print_scripts', [$this, 'addFieldsLocker'], 100);
-        }
-
+        Utilities::jsScriptWrapper($jsID, $code);
         return true;
     }
 
-    public function syncTaxonomiesAndProductAttributesAfterProductUpdate(WC_Product $product, $data_store): void
+    public function suppressInvalidDuplicatedSKUErrorMsg(bool $sku_found, int $product_id, string $sku): bool
     {
-        remove_action('woocommerce_after_product_object_save', [$this, 'syncTaxonomiesAndProductAttributesAfterProductUpdate'], 5, 2);
-        $this->syncTaxonomiesAndProductAttributes($product->get_id(), $product, true);
-    }
-
-    public function syncTaxonomiesAndProductAttributes(int $post_id, $post, bool $update): void
-    {
-        add_filter('pll_copy_post_metas', [__CLASS__, 'wpi_filter_pll_metas'], 10, 5);
-        
-        $taxonomies = get_object_taxonomies(get_post_type($post_id));
-        $copy = isset($_GET['new_lang']) && isset($_GET['from_post']);
-
-        if ($copy) {
-            $source_id = isset($_GET['from_post']) ? absint($_GET['from_post']) : false;
-            if ($source_id) {
-                $new_lang = $_GET['new_lang'];
-                if (!pll_get_post_language($post_id)) {
-                    pll_set_post_language($post_id, $new_lang);
-                }
-                
-                $this->syncProductMeta($source_id, $post_id, $new_lang, false);
-                $this->copyTerms($source_id, $post_id, $new_lang, $taxonomies);
-                $this->syncCustomProductAttributes($source_id, $new_lang);
-            }
-        } else {
-            $langs = pll_languages_list();
-            foreach ($langs as $lang) {
-                $translation_id = pll_get_post($post_id, $lang);
-                if (($translation_id) && ($translation_id != $post_id)) {
-                    $this->syncProductMeta($post_id, $translation_id, $lang, true);
-                    $this->copyTerms($post_id, $translation_id, $lang, $taxonomies);
-                    $this->syncCustomProductAttributes($post_id, $copy);
-                    Utilities::flushCacheUpdateLookupTable($translation_id);
-                }
-            }
-        }
-    }
-
-    public function syncCustomProductAttributes($source, bool $copy): bool
-    {
-        if (!$copy) {
-            $metas = static::getProductMetaToCopy();
-            if (!in_array('_custom_product_attributes', $metas)) {
-                return false;
-            }
+        if (!$sku_found) {
+            return false;
         }
 
-        $product = wc_get_product($source);
-        $productattrs = $product->get_attributes();
-        $copyattrs = [];
-
-        foreach ($productattrs as $productattr) {
-            if (isset($productattr['is_taxonomy']) && $productattr['is_taxonomy'] == 0) {
-                $copyattrs[] = $productattr;
-            }
+        if (!$product_id) {
+            return $sku_found;
         }
 
-        if (count($copyattrs) > 0) {
-            if ($copy) {
-                $product_obj = Utilities::getProductTranslationByID($product, $copy);
-                if ($product_obj) {
-                    $product_obj->set_attributes($copyattrs);
-                    return true;
-                }
-            } else {
-                $product_translations = Utilities::getProductTranslationsArrayByObject($product);
-                foreach ($product_translations as $product_translation) {
-                    if ($product_translation != $source) {
-                        $product_obj = Utilities::getProductTranslationByID($product_translation);
-                        if ($product_obj) {
-                            $product_obj->set_attributes($copyattrs);
-                            return true;
-                        }
-                    }
-                }
+        global $wpdb;
+        $postids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT $wpdb->posts.ID
+                FROM $wpdb->posts
+                LEFT JOIN $wpdb->postmeta ON ($wpdb->posts.ID = $wpdb->postmeta.post_id)
+                WHERE $wpdb->posts.post_type IN ('product', 'product_variation')
+                AND $wpdb->posts.post_status NOT IN ('trash', 'auto-draft')
+                AND $wpdb->postmeta.meta_key = '_sku' AND $wpdb->postmeta.meta_value = %s
+                AND $wpdb->postmeta.post_id <> %d",
+                wp_slash($sku),
+                $product_id
+            )
+        );
+
+        $curlang = pll_get_post_language($product_id);
+        if (!$curlang) {
+            return $sku_found;
+        }
+
+        foreach ($postids as $post_id) {
+            if ($post_id != $product_id && $curlang == pll_get_post_language($post_id)) {
+                return true;
             }
         }
 
         return false;
     }
-
-    public function copyTerms(int $old, int $new, string $lang, array $taxonomies): void
-    {
-        foreach ($taxonomies as $tax) {
-            $old_terms = wp_get_object_terms($old, $tax);
-            $new_terms = [];
-
-            foreach ($old_terms as $t) {
-                $slug = $t->slug;
-
-                switch ($tax) {
-                    case "language":
-                    case "term_language":
-                    case "term_translations":
-                    case "post_translations":
-                        break;
-
-                    case "product_shipping_class":
-                        if (!in_array('product_shipping_class', static::getProductMetaToCopy())) {
-                            break;
-                        }
-                        $new_terms[] = $slug;
-                        break;
-
-                    case "product_visibility":
-                        if (!in_array('_visibility', static::getProductMetaToCopy())) {
-                            break;
-                        }
-                        // fallthrough
-                    case "product_type":
-                        $new_terms[] = $slug;
-                        break;
-
-                    case "product_tag":
-                    case "product_cat":
-                    default:
-                        if (pll_is_translated_taxonomy($tax)) {
-                            $translated_term = pll_get_term($t->term_id, $lang);
-                            if ($translated_term) {
-                                $new_terms[] = get_term_by('id', $translated_term, $tax)->term_id;
-                            } else {
-                                $result = static::createDefaultTermTranslation($tax, $t, $slug, $lang, true);
-                                if ($result) {
-                                    $new_terms[] = $result;
-                                }
-                            }
-                        } else {
-                            $new_terms[] = $t->term_id;
-                        }
-                        break;
-                }
-            }
-
-            if (count($new_terms) > 0) {
-                wp_set_object_terms($new, $new_terms, $tax);
-            } else {
-                if (count($old_terms) == 0) {
-                    wp_set_object_terms($new, false, $tax);
-                }
-            }
-        }
-    }
-
-    public static function createDefaultTermTranslation(
-        string $tax,
-        WP_Term $term,
-        string $slug,
-        string $lang,
-        bool $return_id
-    ): mixed {
-        global $polylang;
-        
-        $newterm_name = $term->name;
-        $newterm_slug = sanitize_title($slug . '-' . $lang);
-        $args = ['slug' => $newterm_slug];
-
-        if ($term->parent) {
-            $translated_parent = pll_get_term($term->parent, $lang);
-            if ($translated_parent) {
-                $args['parent'] = $translated_parent;
-            } else {
-                $parent_term = \WP_Term::get_instance($term->parent);
-                $result = static::createDefaultTermTranslation($tax, $parent_term, $parent_term->slug, $lang, true);
-                if ($result) {
-                    $args['parent'] = $result;
-                }
-            }
-        }
-
-        $newterm = wp_insert_term($newterm_name, $tax, $args);
-        if (is_wp_error($newterm)) {
-            error_log($newterm->get_error_message());
-            return false;
-        }
-
-        $newterm_id = (int) $newterm['term_id'];
-        $translations = $polylang->model->term->get_translations($term->term_id);
-        $translations[$lang] = $newterm_id;
-        $polylang->model->term->set_language($newterm_id, $lang);
-        $polylang->model->term->save_translations($term->term_id, $translations);
-
-        return $return_id ? $newterm_id : $newterm_slug;
-    }
-
-    public function addProductTypeMeta(int $ID): void
-    {
-        if ($ID) {
-            $meta = get_post_meta($ID, '_translation_porduct_type');
-            if (empty($meta)) {
-                $product = wc_get_product($ID);
-                if ($product) {
-                    update_post_meta($ID, '_translation_porduct_type', $product->get_type());
-                }
+}

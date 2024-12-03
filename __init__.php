@@ -13,14 +13,12 @@ declare(strict_types=1);
  * GitHub Plugin URI: hyyan/woo-poly-integration
  * License: MIT License
  * Version: 1.6.0
- * Requires At Least: 5.4
+ * Requires At Least: 6.0
  * Tested Up To: 6.4
- * WC requires at least: 4.0.0
- * WC tested up to: 8.4.0
- * Requires PHP: 8.4
+ * WC requires at least: 3.0.0
+ * WC tested up to: 8.5.0
+ * Requires PHP: 8.3
  */
-
-namespace Hyyan\WPI;
 
 if (!defined('ABSPATH')) {
     exit('restricted access');
@@ -33,15 +31,12 @@ require_once ABSPATH . 'wp-admin/includes/plugin.php';
 require_once __DIR__ . '/vendor/class.settings-api.php';
 require_once __DIR__ . '/src/Hyyan/WPI/Autoloader.php';
 
-// Register the autoloader
-new Autoloader(__DIR__ . '/src/');
+/* register the autoloader */
+new Hyyan\WPI\Autoloader(__DIR__ . '/src/');
 
-// Bootstrap the plugin
-new Plugin();
+/* bootstrap the plugin */
+new Hyyan\WPI\Plugin();
 
-/**
- * Plugin activation handler
- */
 function onActivate(): void
 {
     update_option('wpi_wcpagecheck_passed', false);

@@ -1,40 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI;
 
-use Hyyan\WPI\Admin\Settings;
-use Hyyan\WPI\Admin\Features;
-use Hyyan\WPI\Utilities;
-use WC_Emails;
 use WC_Email;
+use WC_Emails;
 use WC_Order;
 use WP_User;
 use stdClass;
 
 class Emails
 {
-    private array $emails;
-    private string $switched_lang = '';
-
     public function __construct()
     {
-        if ('on' === Settings::getOption('emails', Features::getID(), 'on')) {
-            $this->registerEmailStringsForTranslation();
-            
-            // Filtru pievienošana ar masīvu sintaksi
-            add_filter('woocommerce_email_subject_new_order', [$this, 'filter_email_subject'], 10, 3);
-            add_filter('woocommerce_email_heading_new_order', [$this, 'filter_email_heading'], 10, 3);
-            // ... pārējie filtri ar līdzīgu sintaksi
-            
-            add_filter('woocommerce_email_footer_text', [$this, 'translateCommonString']);
-            add_filter('woocommerce_email_from_address', [$this, 'translateCommonString']);
-            add_filter('woocommerce_email_from_name', [$this, 'translateCommonString']);
-            
-            add_filter('woocommerce_email_setup_locale', [$this, 'reset_lang_switch']);
-            add_filter('woocommerce_email_restore_locale', [$this, 'reset_lang_switch']);
-            
-            do_action(HooksInterface::EMAILS_TRANSLATION_ACTION, $this);
-        }
+        $this->registerEmailStringsForTranslation();
+
+        add_filter('woocommerce_email_subject_new_order', [$this, 'filter_email_subject'], 10, 3);
+        add_filter('woocommerce_email_heading_new_order', [$this, 'filter_email_heading'], 10, 3);
+        add_filter('woocommerce_email_footer_text', [$this, 'translateCommonString']);
+        add_filter('woocommerce_email_from_address', [$this, 'translateCommonString']);
+        add_filter('woocommerce_email_from_name', [$this, 'translateCommonString']);
+        add_filter('woocommerce_email_setup_locale', [$this, 'reset_lang_switch']);
+        add_filter('woocommerce_email_restore_locale', [$this, 'reset_lang_switch']);
+
+        do_action(HooksInterface::EMAILS_TRANSLATION_ACTION, $this);
     }
 
     public function get_default_setting(string $string_type, string $email_type): string
@@ -44,11 +34,9 @@ class Emails
         $emailobj = new stdClass();
         $return = '';
 
-        // Switch sintakse ar tipu pārbaudēm
         $emailobj = match($email_type) {
             'new_order' => $emails['WC_Email_New_Order'],
             'cancelled_order' => $emails['WC_Email_Cancelled_Order'],
-            // ... pārējie gadījumi
             default => $emailobj
         };
 
@@ -75,7 +63,6 @@ class Emails
         $target_language = $this->maybeSwitchLanguage($target_object);
         $email_type = $email_obj->id;
 
-        // Speciālo gadījumu apstrāde ar match
         $string_type = match($email_type) {
             'customer_partially_refunded_order' => $this->handlePartialRefund($string_type),
             'customer_refunded_order' => $this->handleFullRefund($string_type),

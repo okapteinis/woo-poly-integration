@@ -1,16 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI;
 
 use Hyyan\WPI\Admin\Settings;
 use Hyyan\WPI\Admin\Features;
-use Hyyan\WPI\Utilities;
-use stdClass;
 
 class Reports
 {
-    protected ?string $tab;
-    protected ?string $report;
+    protected ?string $tab = null;
+    protected ?string $report = null;
 
     public function __construct()
     {
@@ -29,7 +29,6 @@ class Reports
         add_filter('woocommerce_report_most_stocked_query_from', [$this, 'filterStockByLanguage']);
         add_filter('woocommerce_report_out_of_stock_query_from', [$this, 'filterStockByLanguage']);
         add_filter('woocommerce_report_low_in_stock_query_from', [$this, 'filterStockByLanguage']);
-
         add_action('admin_init', [$this, 'translateProductIDS']);
         add_action('admin_init', [$this, 'translateCategoryIDS']);
         add_filter(
@@ -43,7 +42,6 @@ class Reports
     public function filterProductByLanguage(array $query): array
     {
         $reports = ['sales_by_product', 'sales_by_category'];
-        
         if (!in_array($this->report, $reports, true) || isset($_GET['product_ids'])) {
             return $query;
         }
@@ -51,7 +49,6 @@ class Reports
         $lang = pll_current_language() ? [pll_current_language()] : pll_languages_list();
         $query['join'] .= PLL()->model->post->join_clause('posts');
         $query['where'] .= PLL()->model->post->where_clause($lang, 'post');
-
         return $query;
     }
 
@@ -68,18 +65,19 @@ class Reports
 
         $lang = pll_current_language() ?: get_user_meta(get_current_user_id(), 'user_lang', true);
         $translated = $this->translateProducts($results, $lang);
-        
         return array_values($this->combineUniqueProducts($translated, $mode));
     }
 
     private function determineReportMode(array $results): ?string
     {
-        if (isset($results['0']->order_item_qty)) {
+        if (isset($results[0]->order_item_qty)) {
             return 'top_sellers';
         }
-        if (is_array($results) && isset($results['0']->order_item_total)) {
+
+        if (is_array($results) && isset($results[0]->order_item_total)) {
             return 'top_earners';
         }
+
         return null;
     }
 
@@ -105,11 +103,10 @@ class Reports
                 $unique[$data->product_id] = $data;
                 continue;
             }
-            
+
             $property = $mode === 'top_sellers' ? 'order_item_qty' : 'order_item_total';
             $unique[$data->product_id]->$property += $data->$property;
         }
         return $unique;
     }
-
 }

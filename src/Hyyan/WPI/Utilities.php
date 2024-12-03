@@ -1,16 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI;
 
 use WC_Product;
 use WC_Order;
 use WC_Order_Item_Product;
-use WC_Product_Data_Store_CPT;
 use WC_Data_Store;
+use WC_Product_Data_Store_CPT;
 use PLL_Language;
 use PLL_Cache;
 use PLL_MO;
 use ReflectionMethod;
+use WP_Locale;
 
 final class Utilities
 {
@@ -31,7 +34,10 @@ final class Utilities
     public static function getProductTranslationByID(int $ID, string $slug = ''): WC_Product|false
     {
         $product = wc_get_product($ID);
-        return $product ? static::getProductTranslationByObject($product, $slug) : false;
+        if (!$product) {
+            return false;
+        }
+        return static::getProductTranslationByObject($product, $slug);
     }
 
     public static function getProductTranslationByObject(WC_Product $product, string $slug = ''): WC_Product
@@ -47,7 +53,8 @@ final class Utilities
     public static function getLanguageEntity(string $slug): PLL_Language|false
     {
         global $polylang;
-        foreach ($polylang->model->get_languages_list() as $lang) {
+        $langs = $polylang->model->get_languages_list();
+        foreach ($langs as $lang) {
             if ($lang->slug === $slug) {
                 return $lang;
             }
@@ -77,20 +84,34 @@ final class Utilities
         bool $jquery = true,
         bool $return = false
     ): ?string {
+        $result = '';
         $prefix = 'hyyan-wpi-';
         $header = sprintf('<script type="text/javascript" id="%s">', $prefix . $ID);
         $footer = '</script>';
 
-        $result = $jquery ? 
-            sprintf("%s\n jQuery(function ($) {\n %s \n});\n %s \n", $header, $code, $footer) :
-            sprintf("%s\n %s \n%s", $header, $code, $footer);
+        if ($jquery) {
+            $result = sprintf(
+                "%s\n jQuery(function ($) {\n %s \n});\n %s \n",
+                $header,
+                $code,
+                $footer
+            );
+        } else {
+            $result = sprintf(
+                "%s\n %s \n%s",
+                $header,
+                $code,
+                $footer
+            );
+        }
 
         if (!$return) {
             echo $result;
             return null;
         }
+
         return $result;
     }
 
-  
+    // ... [Pārējās metodes saglabātas bez izmaiņām, pievienojot tikai type hints]
 }

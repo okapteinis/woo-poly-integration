@@ -31,16 +31,6 @@ Integrates WooCommerce with Polylang
 - WooCommerce >= 3.0.0
 - Polylang >= 2.0.0
 
-## Installation
-
-1. Download the plugin from [WordPress Plugin Repository](https://wordpress.org/plugins/woo-poly-integration/)
-2. Upload the plugin to WordPress dashboard
-3. Activate the plugin from WordPress dashboard
-
-## Support
-
-Please direct support questions to the [WordPress Plugin Forum](https://wordpress.org/support/plugin/woo-poly-integration/)
-
 ## Contributing
 
 Everyone is welcome to help contribute and improve this plugin.

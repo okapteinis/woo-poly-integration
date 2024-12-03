@@ -4,28 +4,26 @@ declare(strict_types=1);
 
 namespace Hyyan\WPI\Widgets;
 
-use WC_Query;
-
 class LayeredNav
 {
     public function __construct()
     {
-        add_action('init', [$this, 'layeredNavInit'], 1000);
+        add_filter('woocommerce_layered_nav_term_html', [$this, 'translateTerms'], 10, 4);
     }
 
-    public function layeredNavInit(): bool
+    public function translateTerms(string $term_html, object $term, string $link, string $count): string
     {
-        if (!is_active_widget(false, false, 'woocommerce_layered_nav', true) || 
-            is_admin()
-        ) {
+        return str_replace($term->name, pll__($term->name), $term_html);
+    }
+
+    public function translateActiveFilters(): bool
+    {
+        if (empty($_GET)) {
             return false;
         }
 
-        global $_chosen_attributes;
-
-        $attributes = wc_get_attribute_taxonomies();
-        foreach ($attributes as $tax) {
-            $attribute = wc_sanitize_taxonomy_name($tax->attribute_name);
+        foreach (wc_get_attribute_taxonomies() as $tax) {
+            $attribute = $tax->attribute_name;
             $taxonomy = wc_attribute_taxonomy_name($attribute);
             $name = 'filter_' . $attribute;
 
@@ -35,7 +33,6 @@ class LayeredNav
 
             $terms = explode(',', sanitize_text_field($_GET[$name]));
             $termsTranslations = $this->getTermTranslations($terms);
-
             $_GET[$name] = implode(',', $termsTranslations);
             $_chosen_attributes[$taxonomy]['terms'] = $termsTranslations;
         }
@@ -46,12 +43,10 @@ class LayeredNav
     private function getTermTranslations(array $terms): array
     {
         $termsTranslations = [];
-        
         foreach ($terms as $ID) {
             $translation = pll_get_term($ID);
             $termsTranslations[] = $translation ?: $ID;
         }
-
         return $termsTranslations;
     }
 }

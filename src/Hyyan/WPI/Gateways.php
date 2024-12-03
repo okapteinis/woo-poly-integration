@@ -28,6 +28,7 @@ class Gateways
     {
         $enabledGateways = [];
         $gateways = WC_Payment_Gateways::instance();
+
         if (count($gateways->payment_gateways) > 0) {
             foreach ($gateways->payment_gateways() as $gateway) {
                 if ($this->isEnabled($gateway)) {
@@ -35,6 +36,7 @@ class Gateways
                 }
             }
         }
+
         return $enabledGateways;
     }
 
@@ -53,6 +55,7 @@ class Gateways
                 'cod' => new Gateways\GatewayCOD(),
                 default => null
             };
+
             do_action(
                 HooksInterface::GATEWAY_LOAD_EXTENSION . $gateway->id,
                 $gateway,
@@ -68,12 +71,13 @@ class Gateways
             if (in_array($gateway->id, $default_gateways, true)) {
                 remove_action('woocommerce_email_before_order_table', [$gateway, 'email_instructions']);
                 remove_action('woocommerce_thankyou_' . $gateway->id, [$gateway, 'thankyou_page']);
-            }
-            if ($gateway->id === 'bacs') {
-                remove_action(
-                    'woocommerce_update_options_payment_gateways_' . $gateway->id,
-                    [$gateway, 'save_account_details']
-                );
+
+                if ($gateway->id === 'bacs') {
+                    remove_action(
+                        'woocommerce_update_options_payment_gateways_' . $gateway->id,
+                        [$gateway, 'save_account_details']
+                    );
+                }
             }
         }
     }

@@ -4,44 +4,29 @@ declare(strict_types=1);
 
 namespace Hyyan\WPI\Admin;
 
-abstract class AbstractSettings
+use Hyyan\WPI\HooksInterface;
+use Hyyan\WPI\Admin\Settings;
+
+abstract class AbstractSettings implements SettingsInterface
 {
-    public function getSections(array $sections): array
+    protected Settings_API $settingsApi;
+    protected array $sections = [];
+    protected array $fields = [];
+
+    public function __construct()
     {
-        $current = apply_filters(
-            $this->getSectionsFilterName(),
-            (array) $this->doGetSections()
-        );
-
-        $new = [];
-        foreach ($current as $def) {
-            $def['id'] = static::getID();
-            $new[static::getID()] = $def;
-        }
-
-        return array_merge($sections, $new);
+        $this->init();
+        $this->addSections();
+        $this->addFields();
+        $this->settingsApi = new Settings_API();
+        $this->settingsApi->set_sections($this->sections);
+        $this->settingsApi->set_fields($this->fields);
+        $this->settingsApi->admin_init();
     }
 
-    public function getFields(array $fields): array
-    {
-        return array_merge($fields, [
-            static::getID() => apply_filters(
-                $this->getFieldsFilterName(),
-                (array) $this->doGetFields()
-            ),
-        ]);
-    }
+    abstract protected function init(): void;
 
-    protected function getSectionsFilterName(): string
-    {
-        return sprintf('woo-poly.settings.%s_sections', static::getID());
-    }
+    abstract protected function addSections(): void;
 
-    protected function getFieldsFilterName(): string
-    {
-        return sprintf('woo-poly.settings.%s_fields', static::getID());
-    }
-
-    abstract protected function doGetSections(): array;
-    abstract protected function doGetFields(): array;
+    abstract protected function addFields(): void;
 }

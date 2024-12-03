@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI\Product;
 
 use WC_Product;

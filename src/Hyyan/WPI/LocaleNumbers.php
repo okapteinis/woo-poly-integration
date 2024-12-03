@@ -1,33 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI;
 
-use Hyyan\WPI\Admin\Settings;
-use Hyyan\WPI\Admin\Features;
 use NumberFormatter;
 
 class LocaleNumbers
 {
     public function __construct()
     {
-        if (class_exists(NumberFormatter::class) &&
-            'on' === Settings::getOption('localenumbers', Features::getID(), 'on')
-        ) {
-            add_filter('wc_get_price_decimal_separator', [$this, 'getLocaleDecimalSeparator'], 10, 1);
-            add_filter('wc_get_price_thousand_separator', [$this, 'getLocaleThousandSeparator'], 10, 1);
-            add_filter('wc_price_args', [$this, 'filterPriceArgs'], 10, 1);
-            add_filter('woocommerce_format_localized_decimal', [$this, 'getLocalizedDecimal'], 10, 2);
-        }
+        add_filter('wc_get_price_decimal_separator', [$this, 'getLocaleDecimalSeparator']);
+        add_filter('wc_get_price_thousand_separator', [$this, 'getLocaleThousandSeparator']);
+        add_filter('formatted_woocommerce_price', [$this, 'getLocalizedDecimal'], 10, 2);
     }
 
-    public function filterPriceArgs(array $args): array
+    public function getWooNumbersFormat(array $args): array
     {
-        if (!empty($args['currency'])) {
-            $formatter = new NumberFormatter(
-                pll_current_language('locale') . '@currency=' . $args['currency'],
-                NumberFormatter::CURRENCY
-            );
-            
+        $formatter = new NumberFormatter(pll_current_language('locale'), NumberFormatter::DECIMAL);
+        
+        if ($formatter) {
             $args['decimal_separator'] = $formatter->getSymbol(NumberFormatter::DECIMAL_SEPARATOR_SYMBOL);
             $args['thousand_separator'] = $formatter->getSymbol(NumberFormatter::GROUPING_SEPARATOR_SYMBOL);
             $args['decimals'] = $formatter->getAttribute(NumberFormatter::FRACTION_DIGITS);
@@ -36,7 +28,7 @@ class LocaleNumbers
             $args['decimal_separator'] = $this->getLocaleDecimalSeparator($args['decimal_separator']);
             $args['thousand_separator'] = $this->getLocaleThousandSeparator($args['decimal_separator']);
         }
-        
+
         return $args;
     }
 
@@ -61,7 +53,7 @@ class LocaleNumbers
             $localeResult = $formatter->getSymbol(NumberFormatter::DECIMAL_SEPARATOR_SYMBOL);
             return $localeResult ?: $separator;
         }
-        
+
         return $separator;
     }
 
@@ -72,8 +64,8 @@ class LocaleNumbers
         }
 
         $formatter = new NumberFormatter(pll_current_language('locale'), NumberFormatter::DECIMAL);
-        return $formatter ? 
-            $formatter->getSymbol(NumberFormatter::GROUPING_SEPARATOR_SYMBOL) : 
+        return $formatter ?
+            $formatter->getSymbol(NumberFormatter::GROUPING_SEPARATOR_SYMBOL) :
             $separator;
     }
 }

@@ -4,148 +4,109 @@ declare(strict_types=1);
 
 namespace Hyyan\WPI;
 
-use Hyyan\WPI\Tools\FlashMessages;
+use WC_Email;
+use WC_Emails;
+use WC_Order;
+use WP_User;
+use stdClass;
 
-class Endpoints
+class Emails
 {
-    protected array $endpoints = [];
-
     public function __construct()
     {
-        $this->registerEndpointsTranslations();  // Izlabots no regsiterEndpointsTranslations
-        add_action('init', [$this, 'rewriteEndpoints'], 11);
-        add_action('woocommerce_update_options', [$this, 'addEndpoints']);
-        add_filter('pre_update_option_rewrite_rules', [$this, 'updateRules'], 100, 2);
-        add_filter('pll_the_language_link', [$this, 'correctPolylangSwitcherLinks'], 10, 2);
-        add_filter('wp_get_nav_menu_items', [$this, 'fixMyAccountLinkInMenus']);
-        add_action('current_screen', [$this, 'showFlashMessages']);
+        $this->registerEmailStringsForTranslation();
+
+        add_filter('woocommerce_email_subject_new_order', [$this, 'filter_email_subject'], 10, 3);
+        add_filter('woocommerce_email_heading_new_order', [$this, 'filter_email_heading'], 10, 3);
+        add_filter('woocommerce_email_footer_text', [$this, 'translateCommonString']);
+        add_filter('woocommerce_email_from_address', [$this, 'translateCommonString']);
+        add_filter('woocommerce_email_from_name', [$this, 'translateCommonString']);
+        add_filter('woocommerce_email_setup_locale', [$this, 'reset_lang_switch']);
+        add_filter('woocommerce_email_restore_locale', [$this, 'reset_lang_switch']);
+
+        do_action(HooksInterface::EMAILS_TRANSLATION_ACTION, $this);
     }
 
-    public function rewriteEndpoints(): void
+    public function get_default_setting(string $string_type, string $email_type): string
     {
-        $this->addEndpoints();
-    }
+        $wc_emails = WC_Emails::instance();
+        $emails = $wc_emails->get_emails();
+        $emailobj = new stdClass();
+        $return = '';
 
-    public function registerEndpointsTranslations(): bool  // Izlabots no regsiterEndpointsTranslations
-    {
-        if (!function_exists('WC') || !function_exists('PLL')) {
-            return false;
+        $emailobj = match($email_type) {
+            'new_order' => $emails['WC_Email_New_Order'],
+            'cancelled_order' => $emails['WC_Email_Cancelled_Order'],
+            default => $emailobj
+        };
+
+        if ($emailobj instanceof WC_Email) {
+            $return = match($string_type) {
+                'subject_full', 'subject' => $emailobj->get_default_subject(),
+                'heading_full', 'heading' => $emailobj->get_default_heading(),
+                'additional_content' => $emailobj->get_default_additional_content(),
+                'subject_partial', 'subject_paid' => $emailobj->get_default_subject(true),
+                'heading_partial', 'heading_paid' => $emailobj->get_default_heading(true),
+                default => ''
+            };
         }
 
-        $vars = WC()->query->get_query_vars();
-        foreach ($vars as $key => $value) {
-            WC()->query->query_vars[$key] = $this->getEndpointTranslation($value);
+        return apply_filters(HooksInterface::EMAILS_DEFAULT_SETTING_FILTER, $return, $string_type, $email_type);
+    }
+
+    public function translateEmailStringToObjectLanguage(
+        string $formatted_string,
+        WC_Order|WP_User $target_object,
+        string $string_type,
+        WC_Email $email_obj
+    ): string {
+        $target_language = $this->maybeSwitchLanguage($target_object);
+        $email_type = $email_obj->id;
+
+        $string_type = match($email_type) {
+            'customer_partially_refunded_order' => $this->handlePartialRefund($string_type),
+            'customer_refunded_order' => $this->handleFullRefund($string_type),
+            'customer_invoice' => $this->handleInvoice($string_type, $target_object),
+            default => $string_type
+        };
+
+        $string_template = $this->getEmailSetting($string_type, $email_type) 
+            ?: $this->get_default_setting($string_type, $email_type);
+
+        if (!$string_template) {
+            return $formatted_string;
         }
 
-        return true;
-    }
-
-    public function getEndpointTranslation(string $endpoint): string
-    {
-        pll_register_string(
-            $endpoint,
-            $endpoint,
-            static::getPolylangStringSection()
-        );
-        $this->endpoints[] = $endpoint;
-        return pll__($endpoint);
-    }
-
-    public function updateRules(mixed $value): mixed
-    {
-        remove_filter(
-            'pre_update_option_rewrite_rules',
-            [$this, __FUNCTION__],
-            100,
-            2
-        );
-        $this->addEndpoints();
-        flush_rewrite_rules();
-        return $value;
-    }
-
-    public function addEndpoints(): void
-    {
-        $langs = pll_languages_list();
-        foreach ($this->endpoints as $endpoint) {
-            foreach ($langs as $lang) {
-                add_rewrite_endpoint(
-                    pll_translate_string($endpoint, $lang),
-                    EP_ROOT | EP_PAGES
-                );
-            }
-        }
-    }
-
-    public function rebuildUrl(string $endpoint, string $value = '', string $permalink = ''): string
-    {
-        if (get_option('permalink_structure')) {
-            $query_string = '';
-            if (strstr($permalink, '?')) {
-                $query_string = '?' . parse_url($permalink, PHP_URL_QUERY);
-                $permalink = current(explode('?', $permalink));
-            }
-            return trailingslashit($permalink) . $endpoint . '/' . $query_string;
-        }
-        return add_query_arg($endpoint, $value, $permalink);
-    }
-
-    public function correctPolylangSwitcherLinks(string $link, string $slug): string
-    {
-        global $wp;
-        $endpoints = WC()->query->get_query_vars();
-        foreach ($endpoints as $key => $value) {
-            if (isset($wp->query_vars[$key])) {
-                $link = str_replace(
-                    $value,
-                    pll_translate_string($key, $slug),
-                    $link
-                );
-                break;
-            }
-        }
-        return $link;
-    }
-
-    public function fixMyAccountLinkInMenus(?array $items = []): array
-    {
-        if (!function_exists('PLL')) {
-            return $items ?? [];
+        if ($target_object instanceof WC_Order) {
+            return $this->formatOrderString($string_template, $target_object, $email_obj);
         }
 
-        $translations = PLL()->model->post->get_translations(
-            wc_get_page_id('myaccount')
-        );
-        foreach ($items ?? [] as $item) {
-            if (in_array($item->object_id, $translations, true)) {
-                $vars = WC()->query->get_query_vars();
-                foreach ($vars as $key => $value) {
-                    if ($value && ($pos = strpos($item->url, $value)) !== false) {
-                        $item->url = substr($item->url, 0, $pos);
-                    }
-                }
-            }
-        }
-        return $items ?? [];
+        return $formatted_string;
     }
 
-    public function showFlashMessages(): void
+    private function handlePartialRefund(string $string_type): string
     {
-        $screen = function_exists('get_current_screen') ? get_current_screen() : false;
-        if ($screen &&
-            $screen->id === 'woocommerce_page_wc-settings' &&
-            isset($_GET['tab']) &&
-            $_GET['tab'] === 'advanced'
-        ) {
-            FlashMessages::add(
-                MessagesInterface::MSG_ENDPOINTS_TRANSLATION,
-                Plugin::getView('Messages/endpointsTranslations')
-            );
-        }
+        return match($string_type) {
+            'subject', 'heading' => $string_type . '_partial',
+            default => $string_type
+        };
     }
 
-    public static function getPolylangStringSection(): string
+    private function handleFullRefund(string $string_type): string
     {
-        return __('WooCommerce Endpoints', 'woo-poly-integration');
+        return match($string_type) {
+            'subject', 'heading' => $string_type . '_full',
+            default => $string_type
+        };
+    }
+
+    private function handleInvoice(string $string_type, WC_Order $order): string
+    {
+        return match($string_type) {
+            'subject', 'heading' => $order->has_status(wc_get_is_paid_statuses()) 
+                ? $string_type . '_paid' 
+                : $string_type,
+            default => $string_type
+        };
     }
 }

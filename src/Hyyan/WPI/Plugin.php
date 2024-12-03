@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI;
 
 use Hyyan\WPI\Tools\FlashMessages;
 use Hyyan\WPI\Admin\Settings;
 use Hyyan\WPI\Admin\Features;
-use WP;
 
 class Plugin
 {
@@ -15,20 +16,20 @@ class Plugin
     public function __construct()
     {
         FlashMessages::register();
-
         add_action('init', [$this, 'activate']);
         add_action('plugins_loaded', [$this, 'loadTextDomain']);
         add_action('admin_init', [__CLASS__, 'admin_activate']);
         add_action('pll_add_language', [__CLASS__, 'handleNewLanguage']);
 
-        if (is_admin() && 
-            (!defined('DOING_AJAX') && (!function_exists('is_ajax') || !is_ajax()))
-        ) {
-            $wcpagecheck_passed = get_option('wpi_wcpagecheck_passed');
-            $check_pages = Settings::getOption('checkpages', Features::getID(), 0);
-            
-            if ($check_pages && $check_pages !== 'off' || !$wcpagecheck_passed) {
-                add_action('current_screen', [__CLASS__, 'wpi_ensure_woocommerce_pages_translated']);
+        if (is_admin()) {
+            if (defined('DOING_AJAX') || (function_exists('is_ajax') && is_ajax())) {
+                //skipping ajax
+            } else {
+                $wcpagecheck_passed = get_option('wpi_wcpagecheck_passed');
+                $check_pages = Settings::getOption('checkpages', Features::getID(), 0);
+                if (($check_pages && $check_pages != 'off') || !($wcpagecheck_passed)) {
+                    add_action('current_screen', [__CLASS__, 'wpi_ensure_woocommerce_pages_translated']);
+                }
             }
         }
     }
@@ -78,42 +79,68 @@ class Plugin
         return true;
     }
 
-    private function addPluginLinks(): void
+    protected function registerCore(): void
     {
-        add_filter(
-            'plugin_action_links_woo-poly-integration/__init__.php',
-            function(array $links): array {
-                return [
-                    static::settingsLinkHTML(),
-                    '<a target="_blank" href="https://github.com/hyyan/woo-poly-integration/wiki">' .
-                    __('Docs', 'woo-poly-integration') .
-                    '</a>'
-                ] + $links;
-            }
-        );
-        
-        add_filter('plugin_row_meta', [__CLASS__, 'plugin_row_meta'], 10, 2);
+        new Emails();
+        new Admin\Settings();
+        new Cart();
+        new Order();
+        new Pages();
+        new Endpoints();
+        new Product\Product();
+        new Taxonomies\Taxonomies();
+        new Media();
+        new Permalinks();
+        new Privacy();
+        new Language();
+        new Coupon();
+        new Reports();
+        new Widgets\SearchWidget();
+        new Widgets\LayeredNav();
+        new Gateways();
+        new Shipping();
+        new Breadcrumb();
+        new Tax();
+        new LocaleNumbers();
+        new Ajax();
     }
 
-    private function handleUpgrade(): void
+    public static function getVersion(): string
     {
-        $oldVersion = get_option('wpi_version');
-        $wcpagecheck_passed = get_option('wpi_wcpagecheck_passed');
-        
-        if (!$wcpagecheck_passed || version_compare(self::getVersion(), $oldVersion, '<>')) {
-            self::onUpgrade(self::getVersion(), $oldVersion);
+        $data = get_plugin_data(Hyyan_WPI_DIR);
+        return $data['Version'];
+    }
+
+    public static function getView(string $name, array $vars = []): string
+    {
+        $result = '';
+        $path = dirname(Hyyan_WPI_DIR) . '/src/Hyyan/WPI/Views/' . $name . '.php';
+        if (file_exists($path)) {
+            ob_start();
+            include $path;
+            $result = ob_get_clean();
         }
+        return $result;
     }
 
-    public static function settingsLinkHTML(): string
+    public static function canActivate(): bool
     {
-        $baseURL = is_multisite() ? get_admin_url() : admin_url();
-        return sprintf(
-            '<a href="%soptions-general.php?page=hyyan-wpi">%s</a>',
-            $baseURL,
-            __('Settings', ' woo-poly-integration')
-        );
-    }
+        $polylang = false;
+        $woocommerce = false;
 
-    // ... [pārējās metodes ar līdzīgām izmaiņām]
+        if (class_exists('Polylang')) {
+            if (isset($GLOBALS['polylang'], \PLL()->model, PLL()->links_model)) {
+                if (pll_default_language()) {
+                    $polylang = true;
+                }
+            }
+        }
+
+        if (class_exists('WooCommerce')) {
+            $woocommerce = true;
+        }
+
+        return ($polylang && Utilities::polylangVersionCheck(self::POLYLANG_VERSION)) &&
+               ($woocommerce && Utilities::woocommerceVersionCheck(self::WOOCOMMERCE_VERSION));
+    }
 }

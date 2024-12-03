@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI\Taxonomies;
 
 use Hyyan\WPI\Admin\Settings;
@@ -7,7 +9,6 @@ use Hyyan\WPI\Admin\Features;
 
 class Taxonomies
 {
-    /** @var array<string, object> */
     protected array $managed = [];
 
     private const SUPPORTED_TAXONOMIES = [
@@ -19,7 +20,6 @@ class Taxonomies
     public function __construct()
     {
         $this->prepareAndGet();
-
         add_filter('pll_get_taxonomies', [$this, 'getAllTranslateableTaxonomies'], 10, 2);
         add_action('update_option_wpi-features', [__CLASS__, 'updatePolyLangFromWooPolyFeatures'], 10, 3);
         add_action('update_option_wpi-metas-list', [__CLASS__, 'updatePolyLangFromWooPolyMetas'], 10, 3);
@@ -37,7 +37,6 @@ class Taxonomies
                 $add = array_merge($add, $class::getNames());
             }
         }
-
         return array_merge($taxonomies, $add);
     }
 
@@ -88,7 +87,6 @@ class Taxonomies
         string $taxonomy_key
     ): bool {
         $update = false;
-
         if (($new_value[$setting_key] ?? '') === 'on') {
             if (!in_array($taxonomy_key, $polylang_taxs, true)) {
                 $polylang_options['taxonomies'][] = $taxonomy_key;
@@ -98,7 +96,6 @@ class Taxonomies
             unset($polylang_options['taxonomies'][$key]);
             $update = true;
         }
-
         return $update;
     }
 
@@ -108,7 +105,7 @@ class Taxonomies
         array $polylang_taxs,
         array &$polylang_options
     ): bool {
-        if (!isset($old_value['attributes'], $new_value['attributes']) || 
+        if (!isset($old_value['attributes'], $new_value['attributes']) ||
             $old_value['attributes'] === $new_value['attributes']
         ) {
             return false;
@@ -124,7 +121,6 @@ class Taxonomies
             }
             return true;
         }
-
         return false;
     }
 
@@ -132,7 +128,6 @@ class Taxonomies
     {
         $add = [];
         $remove = [];
-
         foreach (self::SUPPORTED_TAXONOMIES as $option => $class) {
             $names = $class::getNames();
             if ('on' === Settings::getOption($option, Features::getID(), 'on')) {
@@ -144,7 +139,6 @@ class Taxonomies
                 $remove = array_merge($remove, $names);
             }
         }
-
         return [$add, $remove];
     }
 }

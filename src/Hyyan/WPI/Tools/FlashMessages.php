@@ -1,22 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI\Tools;
 
-final class FlashMessages
+class FlashMessages
 {
-    private const OPTION_NAME = 'hyyan-wpi-flash-messages';
+    private const OPTION_NAME = 'wpi-flash-messages';
 
-    public static function register(): void
+    public static function add(string $id, string $message, array $classes = [], bool $persist = false): void
     {
-        add_action('admin_notices', [__CLASS__, 'display']);
-    }
-
-    public static function add(
-        string $id,
-        string $message,
-        array $classes = ['updated'],
-        bool $persist = false
-    ): void {
         $messages = self::getMessages();
         $data = [
             'id' => $id,
@@ -25,9 +18,9 @@ final class FlashMessages
             'persist' => $persist,
         ];
 
-        $messages[$id] = isset($messages[$id]) ? 
-            array_replace_recursive($messages[$id], $data) : 
-            $data;
+        $messages[$id] = isset($messages[$id]) 
+            ? array_replace_recursive($messages[$id], $data) 
+            : $data;
 
         update_option(self::OPTION_NAME, $messages);
     }
@@ -47,42 +40,31 @@ final class FlashMessages
     public static function display(): void
     {
         $messages = self::getMessages();
-
         foreach ($messages as $id => $message) {
             if (!self::shouldDisplayMessage($message)) {
                 continue;
             }
 
             $messages[$id]['displayed'] = !$message['persist'];
-            
             $message['classes'][] = 'is-dismissible notice';
+
             printf(
                 '<div class="%s"><p>%s</p></div>',
-                implode(' ', $message['classes']),
-                $message['message']
+                esc_attr(implode(' ', $message['classes'])),
+                wp_kses_post($message['message'])
             );
         }
 
         update_option(self::OPTION_NAME, $messages);
     }
 
-    public static function clearMessages(): void
-    {
-        delete_option(self::OPTION_NAME);
-    }
-
     private static function getMessages(): array
     {
-        $messages = get_option(self::OPTION_NAME, []);
-        return is_array($messages) ? $messages : [];
+        return get_option(self::OPTION_NAME, []);
     }
 
     private static function shouldDisplayMessage(array $message): bool
     {
-        if (!isset($message['displayed'])) {
-            return true;
-        }
-
-        return $message['persist'] || !$message['displayed'];
+        return !isset($message['displayed']) || $message['persist'];
     }
 }

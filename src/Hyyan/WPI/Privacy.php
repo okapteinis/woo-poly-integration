@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI;
 
 class Privacy
@@ -24,7 +26,7 @@ class Privacy
                 )
             )
         );
-        
+
         $this->registerString(
             'woocommerce_registration_privacy_policy_text',
             get_option(
@@ -35,9 +37,14 @@ class Privacy
                 )
             )
         );
-        
-        $this->registerString('woocommerce_store_notice', get_option('woocommerce_demo_store_notice'));
-        $this->registerString('woocommerce_checkout_terms_and_conditions_checkbox_text', 
+
+        $this->registerString(
+            'woocommerce_store_notice',
+            get_option('woocommerce_demo_store_notice')
+        );
+
+        $this->registerString(
+            'woocommerce_checkout_terms_and_conditions_checkbox_text',
             get_option('woocommerce_checkout_terms_and_conditions_checkbox_text')
         );
     }
@@ -64,7 +71,6 @@ class Privacy
         if (!function_exists('pll_register_string')) {
             return $text;
         }
-
         return pll__($text) ?: $text;
     }
 

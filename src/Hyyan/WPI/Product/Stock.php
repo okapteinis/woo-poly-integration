@@ -1,17 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI\Product;
 
 use Hyyan\WPI\Utilities;
-use Hyyan\WPI\Product\Variation;
 use WC_Product;
 
 class Stock
 {
     public function __construct()
     {
-        $screen = function_exists('get_current_screen') ? get_current_screen() : false;
-        if (($screen && $screen->post_type === 'product') || isset($_POST['product-type'])) {
+        if (!($screen = get_current_screen()) || $screen->post_type === 'product') {
             return;
         }
 
@@ -36,8 +36,8 @@ class Stock
     public static function SyncStock(WC_Product $product): void
     {
         $product_id_with_stock = $product->get_stock_managed_by_id();
-        $product_with_stock = $product_id_with_stock !== $product->get_id() ? 
-            wc_get_product($product_id_with_stock) : 
+        $product_with_stock = $product_id_with_stock !== $product->get_id() ?
+            wc_get_product($product_id_with_stock) :
             $product;
 
         if (!$product_with_stock || !$product_with_stock->get_id()) {
@@ -46,7 +46,7 @@ class Stock
 
         $targetValue = $product_with_stock->get_stock_quantity();
         $product_translations = self::getProductTranslations($product_with_stock);
-
+        
         if (!$product_translations) {
             return;
         }
@@ -65,7 +65,6 @@ class Stock
         if ($product->is_type('variation')) {
             return self::getVariationTranslations($product);
         }
-        
         return Utilities::getProductTranslationsArrayByObject($product);
     }
 
@@ -75,12 +74,10 @@ class Stock
             $product->get_id(),
             pll_default_language()
         );
-        
         $translations = Variation::getRelatedVariation(
             get_post_meta($base_variation_id, Variation::DUPLICATE_KEY, true),
             true
         );
-
         return self::adjustVariationTranslations(
             $translations,
             $product->get_stock_managed_by_id(),
@@ -98,12 +95,10 @@ class Stock
                 $translations,
                 fn($id) => $id !== $product_id_with_stock
             );
-            
             if (!in_array($base_variation_id, $translations, true)) {
                 $translations[] = $base_variation_id;
             }
         }
-        
         return $translations;
     }
 
@@ -125,7 +120,6 @@ class Stock
 
             wc_update_product_stock($translation, $targetValue, 'set', true);
             wc_update_product_stock_status($translation_id, $target_status);
-
             if ($parent_id = $translation->get_parent_id()) {
                 wc_update_product_stock_status($parent_id, $target_status);
             }

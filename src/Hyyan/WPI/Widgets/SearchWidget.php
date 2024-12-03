@@ -10,17 +10,13 @@ class SearchWidget
 {
     public function __construct()
     {
-        add_filter('get_product_search_form', [$this, 'fixSearchForm']);
+        add_filter('get_search_form', [$this, 'getSearchForm'], 10, 1);
     }
 
-    public function fixSearchForm(?string $form): string
+    public function getSearchForm(string $form): string
     {
-        if (!$form) {
-            return '';
-        }
-
-        global $polylang;
-        if (!($polylang instanceof Polylang)) {
+        $polylang = $GLOBALS['polylang'] ?? null;
+        if (!$polylang instanceof Polylang) {
             return $form;
         }
 
@@ -42,28 +38,21 @@ class SearchWidget
 
     private function handlePermalinks(string $form, Polylang $polylang): string
     {
-        if (!preg_match('#<form.+>#', $form, $matches)) {
+        if (!preg_match('#<form[^>]*action="([^"]*)"[^>]*>#', $form, $matches)) {
             return $form;
         }
 
-        $old = reset($matches);
-        $new = preg_replace(
-            '#' . $polylang->links_model->home . '\/?#',
-            $polylang->curlang->search_url,
-            $old
-        );
-
-        return $new ? str_replace($old, $new, $form) : $form;
+        $action = $matches[1];
+        $newAction = $polylang->curlang->home_url . (parse_url($action, PHP_URL_PATH) ?: '');
+        return str_replace($action, $newAction, $form);
     }
 
     private function handleNonPermalinks(string $form, Polylang $polylang): string
     {
+        $language = $polylang->curlang->slug;
         return str_replace(
             '</form>',
-            sprintf(
-                '<input type="hidden" name="lang" value="%s" /></form>',
-                esc_attr($polylang->curlang->slug)
-            ),
+            '<input type="hidden" name="lang" value="' . esc_attr($language) . '" /></form>',
             $form
         );
     }

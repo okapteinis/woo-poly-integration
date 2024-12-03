@@ -271,8 +271,8 @@ class Variation
                 $term = $this->getTermBySlug($tax, $termSlug);
                 if ($term) {
                     $term_id = $term->term_id;
-                    $lang = isset($_GET['new_lang']) ? 
-                        esc_attr($_GET['new_lang']) : 
+                    $lang = isset($_GET['new_lang']) ?
+                        esc_attr($_GET['new_lang']) :
                         pll_get_post_language($this->to->get_id());
                     
                     $translated_term = pll_get_term($term_id, $lang);

@@ -1,40 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI;
 
-use Hyyan\WPI\Product\Variation;
-use Hyyan\WPI\Product\Meta;
-use Hyyan\WPI\Utilities;
 use WC_Product;
 use WC_Product_Variation;
 
 class Cart
 {
-    public const ADD_TO_CART_HANDLER_VARIABLE = 'wpi_variable';
-
     public function __construct()
     {
-        add_filter('woocommerce_add_to_cart_product_id', [$this, 'addToCart'], 10, 1);
         add_filter('woocommerce_cart_item_product', [$this, 'translateCartItemProduct'], 10, 2);
-        add_filter('woocommerce_cart_item_product_id', [$this, 'translateCartItemProductId'], 10, 1);
+        add_filter('woocommerce_cart_item_product_id', [$this, 'translateCartItemProductId']);
         add_filter('woocommerce_cart_item_permalink', [$this, 'translateCartItemPermalink'], 10, 2);
         add_filter('woocommerce_get_item_data', [$this, 'translateCartItemData'], 10, 2);
-        add_action('wp_enqueue_scripts', [$this, 'replaceCartFragmentsScript'], 100);
-    }
-
-    public function addToCart(int $ID): int
-    {
-        $result = $ID;
-        $IDS = Utilities::getProductTranslationsArrayByID($ID);
-        
-        foreach (WC()->cart->get_cart() as $values) {
-            $product = $values['data'];
-            if (in_array($product->get_id(), $IDS, true)) {
-                $result = $product->get_id();
-                break;
-            }
-        }
-        return $result;
+        add_action('wp_enqueue_scripts', [$this, 'replaceCartFragmentsScript']);
     }
 
     public function translateCartItemProduct(WC_Product|WC_Product_Variation $cart_item_data, array $cart_item): WC_Product|WC_Product_Variation
@@ -67,6 +48,7 @@ class Cart
                 $cart_item
             );
         }
+
         return $cart_item_data_translation;
     }
 
@@ -89,8 +71,9 @@ class Cart
     public function translateCartItemData(array $item_data, array $cart_item): array
     {
         $cart_variation_id = $cart_item['variation_id'] ?? 0;
-        if ($cart_variation_id === 0 || 
-            ($cart_variation_id !== 0 && $this->getVariationTranslation($cart_variation_id) === false)) {
+        if ($cart_variation_id === 0 ||
+            ($cart_variation_id !== 0 && $this->getVariationTranslation($cart_variation_id) === false)
+        ) {
             return $item_data;
         }
 
@@ -122,6 +105,7 @@ class Cart
                 $item_data_translation[] = $data;
             }
         }
+
         return !empty($item_data_translation) ? $item_data_translation : $item_data;
     }
 
@@ -152,7 +136,6 @@ class Cart
                 'post_type' => 'product_variation',
                 'post_parent' => $_product_id
             ]);
-
             if ($variation_post && count($variation_post) === 1) {
                 return wc_get_product($variation_post[0]->ID);
             }

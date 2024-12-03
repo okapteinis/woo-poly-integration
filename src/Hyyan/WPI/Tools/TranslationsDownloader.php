@@ -1,32 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI\Tools;
 
 use Hyyan\WPI\HooksInterface;
 use RuntimeException;
-use WP_Filesystem_Base;
-use WC;
+use WP_Filesystem;
 
 class TranslationsDownloader
 {
     public static function download(string $locale, string $name): bool
     {
-        if (self::isDownloaded($locale)) {
-            return true;
-        }
-
-        if (!self::isAvaliable($locale)) {
-            throw new RuntimeException(
-                sprintf(
-                    __('WooCommerce translation %s can not be found in : <a href="%2$s">%2$s</a>', 'woo-poly-integration'),
-                    sprintf('%s(%s)', $name, $locale),
-                    self::getRepoUrl()
-                )
-            );
-        }
-
         $cantDownload = sprintf(
-            __('Unable to download WooCommerce translation %s from : <a href="%2$s">%2$s</a>', 'woo-poly-integration'),
+            __('Unable to download WooCommerce translation %s from : %2$s', 'woo-poly-integration'),
             sprintf('%s(%s)', $name, $locale),
             self::getRepoUrl()
         );
@@ -36,8 +23,8 @@ class TranslationsDownloader
             ['sslverify' => false, 'timeout' => 200]
         );
 
-        if (is_wp_error($response) || 
-            $response['response']['code'] < 200 || 
+        if (is_wp_error($response) ||
+            $response['response']['code'] < 200 ||
             $response['response']['code'] >= 300
         ) {
             throw new RuntimeException($cantDownload);
@@ -49,10 +36,8 @@ class TranslationsDownloader
     private static function processDownload(array $response, string $locale, string $errorMessage): bool
     {
         global $wp_filesystem;
-
         if (empty($wp_filesystem)) {
             require_once ABSPATH . '/wp-admin/includes/file.php';
-            
             $creds = request_filesystem_credentials('', '', false, false, null);
             if ($creds === false || !WP_Filesystem($creds)) {
                 throw new RuntimeException($errorMessage);
@@ -61,14 +46,12 @@ class TranslationsDownloader
 
         $uploadDir = wp_upload_dir();
         $file = trailingslashit($uploadDir['path']) . $locale . '.zip';
-
         if (!$wp_filesystem->put_contents($file, $response['body'], FS_CHMOD_FILE)) {
             throw new RuntimeException($errorMessage);
         }
 
         $dir = trailingslashit(WP_LANG_DIR) . 'plugins/';
         $unzip = unzip_file($file, $dir);
-        
         if ($unzip !== true) {
             throw new RuntimeException($errorMessage);
         }
@@ -83,9 +66,8 @@ class TranslationsDownloader
             sprintf('%s/%s.zip', self::getRepoUrl(), $locale),
             ['sslverify' => false, 'timeout' => 200]
         );
-
-        return !is_wp_error($response) && 
-            $response['response']['code'] >= 200 && 
+        return !is_wp_error($response) &&
+            $response['response']['code'] >= 200 &&
             $response['response']['code'] < 300;
     }
 
@@ -104,7 +86,6 @@ class TranslationsDownloader
             'https://downloads.wordpress.org/translation/plugin/woocommerce/%s',
             WC()->version
         );
-
         return apply_filters(HooksInterface::LANGUAGE_REPO_URL_FILTER, $url);
     }
 }

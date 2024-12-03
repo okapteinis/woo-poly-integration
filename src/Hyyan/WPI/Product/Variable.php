@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Hyyan\WPI\Product;
 
-use Hyyan\WPI\HooksInterface;
 use Hyyan\WPI\Utilities;
 use WC_Product;
 use WC_Product_Variable;
@@ -14,15 +15,7 @@ class Variable
     {
         add_action('save_post_product', [$this, 'handleNewProduct'], 5, 3);
         add_action('woocommerce_after_product_object_save', [$this, 'after_product_save'], 10, 2);
-        add_action('wp_ajax_woocommerce_remove_variations', [$this, 'removeVariations'], 9);
-        add_filter(HooksInterface::PRODUCT_META_SYNC_FILTER, [$this, 'extendProductMetaList']);
-        add_filter(HooksInterface::FIELDS_LOCKER_SELECTORS_FILTER, [$this, 'extendFieldsLockerSelectors']);
         add_filter('woocommerce_variable_children_args', [$this, 'allow_variable_children'], 10, 3);
-
-        if (is_admin()) {
-            $this->handleVariableLimitation();
-            $this->shouldDisableLangSwitcher();
-        }
     }
 
     public function handleNewProduct(int $post_id, WP_Post $post, bool $update): void
@@ -37,7 +30,6 @@ class Variable
     {
         $productId = $product->get_id();
         $post = get_post($productId);
-        
         if ($post) {
             $this->duplicateVariations($productId, $post, true);
             $this->syncDefaultAttributes($productId, $post, true);
@@ -53,29 +45,27 @@ class Variable
     public function duplicateVariations(int $ID, WP_Post $post, bool $update): bool
     {
         static $last_id;
-
-        if ($ID === $last_id || 
+        if ($ID === $last_id ||
             (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)
         ) {
             return false;
         }
 
         global $pagenow;
-        if (!in_array($pagenow, ['post.php', 'post-new.php'], true) || 
+        if (!in_array($pagenow, ['post.php', 'post-new.php'], true) ||
             $post->post_type !== 'product'
         ) {
             return false;
         }
 
         $product = wc_get_product($ID);
-        if (!$product || 
+        if (!$product ||
             ($product->get_type() !== 'variable' && !isset($_GET['from_post']))
         ) {
             return false;
         }
 
         $last_id = $ID;
-
         if ($product->get_parent_id()) {
             $product = wc_get_product($product->get_parent_id());
         }
@@ -104,14 +94,12 @@ class Variable
     {
         $langs = isset($_GET['new_lang']) ? [$_GET['new_lang']] : pll_languages_list();
         $def_lang = pll_default_language();
-
         if (($key = array_search($def_lang, $langs, true)) !== false) {
             unset($langs[$key]);
         }
 
         remove_action('woocommerce_after_product_object_save', [$this, 'after_product_save'], 10);
         add_filter('woocommerce_hide_invisible_variations', fn() => false);
-
         foreach ($langs as $lang) {
             $variation = new Variation(
                 $from,
@@ -119,9 +107,6 @@ class Variable
             );
             $variation->duplicate();
         }
-
         add_action('woocommerce_after_product_object_save', [$this, 'after_product_save'], 10, 2);
     }
-
-    // ... [pārējās metodes ar līdzīgām izmaiņām]
 }

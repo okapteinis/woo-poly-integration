@@ -6,16 +6,15 @@ namespace Hyyan\WPI\Admin;
 
 class Features extends AbstractSettings
 {
-    public function getID(): string
+    public static function getID(): string
     {
         return 'wpi-features';
     }
 
-    protected function getSections(): array
+    protected function doGetSections(): array
     {
         return [
             [
-                'id' => 'wpi-features',
                 'title' => __('Features', 'woo-poly-integration'),
                 'desc' => sprintf(
                     '%s %s %s.',

@@ -21,7 +21,7 @@ class GatewayCheque extends \WC_Gateway_Cheque
 
     public function email_instructions(\WC_Order $order, bool $sent_to_admin, bool $plain_text = false): void
     {
-        if (!$sent_to_admin && 'cheque' === Utilities::get_payment_method($order)) {
+        if (!$sent_to_admin && 'cheque' === Utilities::get_payment_method($order) && $order->has_status('on-hold')) {
             if ($this->instructions) {
                 echo wpautop(wptexturize(
                     function_exists('pll__') ? 

@@ -4,109 +4,161 @@ declare(strict_types=1);
 
 namespace Hyyan\WPI\Product;
 
+use Hyyan\WPI\Admin\Settings;
+use Hyyan\WPI\Admin\Features;
 use Hyyan\WPI\Utilities;
 use WC_Product;
-use WC_Product_Variable;
-use WP_Post;
 
-class Variable
+class Product
 {
     public function __construct()
     {
-        add_action('save_post_product', [$this, 'handleNewProduct'], 5, 3);
-        add_action('woocommerce_after_product_object_save', [$this, 'after_product_save'], 10, 2);
-        add_filter('woocommerce_variable_children_args', [$this, 'allow_variable_children'], 10, 3);
-    }
+        add_filter('pll_get_post_types', [$this, 'manageProductTranslation']);
+        add_filter('admin_init', [$this, 'syncPostParent']);
 
-    public function handleNewProduct(int $post_id, WP_Post $post, bool $update): void
-    {
-        if (!$update && isset($_GET['from_post'])) {
-            $this->duplicateVariations($post_id, $post, $update);
-            $this->syncDefaultAttributes($post_id, $post, $update);
+        $translate_option = Settings::getOption('new-translation-defaults', Features::getID(), 0);
+        if ($translate_option) {
+            add_filter('default_title', [$this, 'wpi_editor_title']);
+            add_filter('default_content', [$this, 'wpi_editor_content']);
+            add_filter('default_excerpt', [$this, 'wpi_editor_excerpt']);
+
+            add_filter('woocommerce_product_get_upsell_ids', [$this, 'getUpsellsInLanguage'], 10, 2);
+            add_filter('woocommerce_product_get_cross_sell_ids', [$this, 'getCrosssellsInLanguage'], 10, 2);
+            add_filter('woocommerce_product_get_children', [$this, 'getChildrenInLanguage'], 10, 2);
+        }
+
+        add_action('wp_ajax_woocommerce_feature_product', [__CLASS__, 'sync_ajax_woocommerce_feature_product'], 5);
+
+        new Meta();
+        new Variable();
+        new Duplicator();
+
+        if ('on' === Settings::getOption('stock', Features::getID(), 'on') &&
+            'yes' === get_option('woocommerce_manage_stock')) {
+            new Stock();
         }
     }
 
-    public function after_product_save(WC_Product $product, object $data_store): void
+    public static function sync_ajax_woocommerce_feature_product(): void
     {
-        $productId = $product->get_id();
-        $post = get_post($productId);
-        if ($post) {
-            $this->duplicateVariations($productId, $post, true);
-            $this->syncDefaultAttributes($productId, $post, true);
+        $metas = Meta::getDisabledProductMetaToCopy();
+        if (in_array('_visibility', $metas, true)) {
+            return;
+        }
+
+        $product = wc_get_product(absint($_GET['product_id']));
+        if (!$product) {
+            return;
+        }
+
+        $targetValue = !$product->get_featured();
+        $product_translations = Utilities::getProductTranslationsArrayByObject($product);
+
+        foreach ($product_translations as $product_translation) {
+            if ($product_translation == $product->get_id()) {
+                continue;
+            }
+
+            $translation = wc_get_product($product_translation);
+            if ($translation) {
+                $translation->set_featured($targetValue);
+                $translation->save();
+            }
         }
     }
 
-    public function allow_variable_children(array $args, WC_Product $product, bool $visible): array
+    public function getChildrenInLanguage(array $relatedIds, WC_Product $product): array
     {
-        $args['lang'] = '';
-        return $args;
+        return $this->getProductIdsInLanguage($relatedIds, $product);
     }
 
-    public function duplicateVariations(int $ID, WP_Post $post, bool $update): bool
+    public function getUpsellsInLanguage(array $relatedIds, WC_Product $product): array
     {
-        static $last_id;
-        if ($ID === $last_id ||
-            (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)
-        ) {
-            return false;
-        }
-
-        global $pagenow;
-        if (!in_array($pagenow, ['post.php', 'post-new.php'], true) ||
-            $post->post_type !== 'product'
-        ) {
-            return false;
-        }
-
-        $product = wc_get_product($ID);
-        if (!$product ||
-            ($product->get_type() !== 'variable' && !isset($_GET['from_post']))
-        ) {
-            return false;
-        }
-
-        $last_id = $ID;
-        if ($product->get_parent_id()) {
-            $product = wc_get_product($product->get_parent_id());
-        }
-
-        $from = $this->getSourceProduct($product);
-        if (!($from instanceof WC_Product_Variable)) {
-            return false;
-        }
-
-        $this->processDuplication($from, $product);
-        return true;
+        return $this->getProductIdsInLanguage($relatedIds, $product);
     }
 
-    private function getSourceProduct(WC_Product $product): ?WC_Product
+    public function getCrosssellsInLanguage(array $relatedIds, WC_Product $product): array
     {
-        if (pll_get_post_language($product->get_id()) === pll_default_language()) {
-            return $product;
-        }
-
-        return isset($_GET['from_post']) ?
-            Utilities::getProductTranslationByID(esc_attr($_GET['from_post']), pll_default_language()) :
-            Utilities::getProductTranslationByObject($product, pll_default_language());
+        return $this->getProductIdsInLanguage($relatedIds, $product);
     }
 
-    private function processDuplication(WC_Product_Variable $from, WC_Product $product): void
+    public function getProductIdsInLanguage(array $productIds, WC_Product $product): array
     {
-        $langs = isset($_GET['new_lang']) ? [$_GET['new_lang']] : pll_languages_list();
-        $def_lang = pll_default_language();
-        if (($key = array_search($def_lang, $langs, true)) !== false) {
-            unset($langs[$key]);
+        $productLang = pll_get_post_language($product->get_id());
+        $mappedIds = [];
+
+        foreach ($productIds as $productId) {
+            $correctLanguageId = pll_get_post($productId, $productLang);
+            if ($correctLanguageId) {
+                $mappedIds[] = $correctLanguageId;
+            } else {
+                $mappedIds[] = $productId;
+            }
         }
 
-        remove_action('woocommerce_after_product_object_save', [$this, 'after_product_save'], 10);
-        add_filter('woocommerce_hide_invisible_variations', fn() => false);
-        foreach ($langs as $lang) {
-            $variation = new Variation(
-                $from,
-                Utilities::getProductTranslationByObject($product, $lang)
-            );
-            $variation->duplicate();
+        return $mappedIds;
+    }
+
+    public function manageProductTranslation(array $types): array
+    {
+        $options = get_option('polylang');
+        $postTypes = $options['post_types'];
+
+        if (!in_array('product', $postTypes, true)) {
+            $options['post_types'][] = 'product';
+            update_option('polylang', $options);
         }
-        add_action('woocommerce_after_product_object_save', [$this, 'after_product_save'], 10, 2);
+
+        if (!in_array('product_variation', $postTypes, true)) {
+            $options['post_types'][] = 'product_variation';
+            update_option('polylang', $options);
+        }
+
+        $types[] = 'product';
+        return $types;
+    }
+
+    public function syncPostParent(): void
+    {
+        $options = get_option('polylang');
+        $sync = $options['sync'];
+
+        if (!in_array('post_parent', $sync, true)) {
+            $options['sync'][] = 'post_parent';
+            update_option('polylang', $options);
+        }
+    }
+
+    public function wpi_editor_title(string $title): string
+    {
+        if (isset($_GET['from_post'])) {
+            $my_post = get_post($_GET['from_post']);
+            if ($my_post) {
+                return $my_post->post_title;
+            }
+        }
+        return $title;
+    }
+
+    public function wpi_editor_content(string $content): string
+    {
+        if (isset($_GET['from_post'])) {
+            $my_post = get_post($_GET['from_post']);
+            if ($my_post) {
+                return $my_post->post_content;
+            }
+        }
+        return $content;
+    }
+
+    public function wpi_editor_excerpt(string $excerpt): string
+    {
+        if (isset($_GET['from_post'])) {
+            $my_post = get_post($_GET['from_post']);
+            if ($my_post) {
+                return $my_post->post_excerpt;
+            }
+        }
+        return $excerpt;
     }
 }

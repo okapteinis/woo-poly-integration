@@ -5,47 +5,30 @@ declare(strict_types=1);
 namespace Hyyan\WPI\Gateways;
 
 use Hyyan\WPI\Utilities;
-use WC_Order;
 
-class GatewayCheque
+class GatewayCheque extends \WC_Gateway_Cheque
 {
-    public function __construct()
-    {
-        add_action('woocommerce_thankyou_cheque', [$this, 'thankyou_page']);
-        add_action('woocommerce_email_before_order_table', [$this, 'email_instructions'], 10, 3);
-    }
-
-    public function thankyou_page(int $order_id): void
+    public function thankyou_page(): void
     {
         if ($this->instructions) {
-            echo wpautop(
-                wptexturize(
-                    wp_kses_post(
-                        function_exists('pll__') 
-                            ? pll__($this->instructions) 
-                            : __($this->instructions, 'woocommerce')
-                    )
-                )
-            );
+            echo wpautop(wptexturize(wp_kses_post(
+                function_exists('pll__') ? 
+                pll__($this->instructions) : 
+                __($this->instructions, 'woocommerce')
+            )));
         }
     }
 
-    public function email_instructions(WC_Order $order, bool $sent_to_admin, bool $plain_text = false): void
+    public function email_instructions(\WC_Order $order, bool $sent_to_admin, bool $plain_text = false): void
     {
-        if (!$this->instructions ||
-            $sent_to_admin ||
-            'cheque' !== Utilities::get_payment_method($order) ||
-            !$order->has_status('on-hold')
-        ) {
-            return;
+        if (!$sent_to_admin && 'cheque' === Utilities::get_payment_method($order)) {
+            if ($this->instructions) {
+                echo wpautop(wptexturize(
+                    function_exists('pll__') ? 
+                    pll__($this->instructions) : 
+                    __($this->instructions, 'woocommerce')
+                )) . PHP_EOL;
+            }
         }
-
-        echo wpautop(
-            wptexturize(
-                function_exists('pll__') 
-                    ? pll__($this->instructions) 
-                    : __($this->instructions, 'woocommerce')
-            )
-        ) . PHP_EOL;
     }
 }

@@ -7,10 +7,12 @@ namespace Hyyan\WPI\Admin;
 use Hyyan\WPI\HooksInterface;
 use Hyyan\WPI\Plugin;
 
-class Settings
+class Settings extends \WeDevs_Settings_API
 {
     public function __construct()
     {
+        parent::__construct();
+        add_action('admin_menu', [$this, 'registerMenu']);
         $this->set_sections($this->getSections());
         $this->set_fields($this->getFields());
         $this->admin_init();
@@ -54,11 +56,11 @@ class Settings
         if (!empty($options[$option])) {
             return $options[$option];
         }
-
+        
         if (isset($options[$option])) {
             return [];
         }
-
+        
         return $default;
     }
 }

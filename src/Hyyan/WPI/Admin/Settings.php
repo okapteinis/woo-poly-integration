@@ -12,7 +12,17 @@ class Settings extends \WeDevs_Settings_API
     public function __construct()
     {
         parent::__construct();
+        $this->init();
+    }
+
+    public function init(): void
+    {
         add_action('admin_menu', [$this, 'registerMenu']);
+
+        // Initialize Features and MetasList
+        new Features();
+        new MetasList();
+
         $this->set_sections($this->getSections());
         $this->set_fields($this->getFields());
         $this->admin_init();
@@ -56,11 +66,11 @@ class Settings extends \WeDevs_Settings_API
         if (!empty($options[$option])) {
             return $options[$option];
         }
-        
+
         if (isset($options[$option])) {
             return [];
         }
-        
+
         return $default;
     }
 }

@@ -21,6 +21,7 @@ the same interface you love.
 
 ## Features
 
+### Core Features
 - [x] Auto Download Woocommerce Translation Files
 - [x] Page Translation
 - [x] Endpoints Translation
@@ -41,14 +42,29 @@ the same interface you love.
   - [x] Filter by language
   - [x] Combine reports for all languages
 
+### Modern WooCommerce Support (v1.7.0+)
+- [x] **HPOS Support** - Full compatibility with High-Performance Order Storage (WooCommerce 7.0+)
+- [x] **WooCommerce Blocks** - Cart Block, Checkout Block, Product Collection Block
+- [x] **REST API v3** - Language filtering for products, orders, categories, tags via `?lang=` or header
+- [x] **Block Themes** - Site Editor and Block Theme compatibility (WordPress 5.9+)
+- [x] **Order Search** - Language-aware order search in admin (HPOS-compatible)
+- [x] **Store API** - Language context for headless/API-driven stores
+
+
+## Requirements
+
+- **WordPress:** 5.4 or higher
+- **WooCommerce:** 7.0 or higher (for HPOS support)
+- **Polylang:** 2.0 or higher
+- **PHP:** 7.4 or higher
 
 ## What you need to know about this plugin
 
-1. WooCommerce and therefore this plugin needs `PHP7 and above`
+1. **Modern Features:** v1.7.0+ requires WooCommerce 7.0+ for HPOS support. For older WooCommerce versions, use v1.6.0.
 2. This plugin is developed in sync with [Polylang](https://wordpress.org/plugins/polylang)
-   and [WooCommerce](https://wordpress.org/plugins/woocommerce/) latest version
-3. The plugin support variable products , but using them will `disallow you to
-   change the default language` , because of the way the plugin implements this
+   and [WooCommerce](https://wordpress.org/plugins/woocommerce/) latest versions
+3. The plugin supports variable products, but using them will `disallow you to
+   change the default language`, because of the way the plugin implements this
    support. So you have to make sure to choose the default language before you start
    adding new variable products.
 4. Polylang URL modifications method `The language is set from content` is not

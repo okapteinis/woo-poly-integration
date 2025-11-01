@@ -554,11 +554,85 @@ final class Utilities
 	}
 
 	/**
+	 * Check if HPOS (High-Performance Order Storage) is enabled.
+	 *
+	 * @return bool true if HPOS is enabled, false otherwise
+	 */
+	public static function is_hpos_enabled()
+	{
+		if (!class_exists('Automattic\\WooCommerce\\Utilities\\OrderUtil')) {
+			return false;
+		}
+		return \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+	}
+
+	/**
+	 * Get order language (works with both HPOS and legacy post-based orders).
+	 *
+	 * @param int|\WC_Order $order Order ID or order object
+	 *
+	 * @return string|false Language code on success, false otherwise
+	 */
+	public static function get_order_language($order)
+	{
+		if (is_numeric($order)) {
+			$order = wc_get_order($order);
+		}
+
+		if (!$order) {
+			return false;
+		}
+
+		if (static::is_hpos_enabled()) {
+			// HPOS mode: use order meta
+			$language = $order->get_meta('_order_language', true);
+			return $language ? $language : false;
+		} else {
+			// Legacy mode: use post language
+			return pll_get_post_language($order->get_id());
+		}
+	}
+
+	/**
+	 * Set order language (works with both HPOS and legacy post-based orders).
+	 *
+	 * @param int|\WC_Order $order Order ID or order object
+	 * @param string        $lang  Language code
+	 *
+	 * @return bool true on success, false otherwise
+	 */
+	public static function set_order_language($order, $lang)
+	{
+		if (!$lang) {
+			return false;
+		}
+
+		if (is_numeric($order)) {
+			$order = wc_get_order($order);
+		}
+
+		if (!$order) {
+			return false;
+		}
+
+		if (static::is_hpos_enabled()) {
+			// HPOS mode: store in order meta
+			$order->update_meta_data('_order_language', $lang);
+			$order->save();
+			return true;
+		} else {
+			// Legacy mode: use post language
+			pll_set_post_language($order->get_id(), $lang);
+			return true;
+		}
+	}
+
+	/**
 	 * Reload text domains with requested locale.
 	 *
 	 * @param string $languageLocale Language locale (e.g. en_GB, de_DE )
 	 */
-	public static function switchLocale( $languageLocale ) 
+	public static function switchLocale( $languageLocale )
 	{
 		static::switch_pll_locale( $languageLocale );
 		static::switch_wp_locale( $languageLocale );

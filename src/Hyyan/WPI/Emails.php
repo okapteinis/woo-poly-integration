@@ -400,7 +400,11 @@ class Emails
         $target_language = $locale;
 
         if (is_a($target_object, 'WC_Order')) {
-            $target_language = pll_get_post_language($target_object->get_id(), 'locale');
+            $order_lang = Utilities::get_order_language($target_object);
+            if ($order_lang) {
+                $lang_obj = Utilities::getLanguageEntity($order_lang);
+                $target_language = $lang_obj ? $lang_obj->locale : $order_lang;
+            }
         } else if (is_a($target_object, 'WP_User')) {
             $target_language = get_user_locale($target_object->ID);
         }

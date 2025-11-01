@@ -1,5 +1,106 @@
 # Changelog
 
+### 1.7.0 - 2025-01-XX
+
+**Modern WooCommerce Support: HPOS, Blocks, REST API & More**
+
+This major release adds comprehensive support for modern WooCommerce features including High-Performance Order Storage (HPOS), WooCommerce Blocks, REST API language filtering, Block Themes, and more.
+
+#### 🚀 New Features
+
+**HPOS (High-Performance Order Storage) Support**
+* Full compatibility with WooCommerce 7.0+ HPOS system
+* Automatic detection of HPOS mode with fallback to legacy post-based storage
+* Order language stored in custom meta for HPOS tables
+* Language column in admin orders list for HPOS
+* Backward compatible with legacy WooCommerce order storage
+
+**WooCommerce Blocks Support**
+* Cart Block language filtering
+* Checkout Block language support via Store API
+* Product Collection Block language filtering (WooCommerce 8.0+)
+* Mini Cart Block compatibility
+* All product blocks (Best Sellers, Featured, On Sale, etc.) language-aware
+* Store API language context for headless/API-driven stores
+
+**REST API v3 Language Support**
+* Language filtering via query parameter (`?lang=en`) or header (`X-WC-Language: en`)
+* Products endpoint language filtering
+* Orders endpoint language filtering (HPOS-compatible)
+* Categories/Tags endpoint language filtering
+* Coupons endpoint language filtering
+* Language info included in all API responses
+* Translation IDs included for products, categories, and tags
+
+**Site Editor & Block Theme Support**
+* Block template filtering by language
+* Template part translation support
+* Language context in block rendering
+* Registration of `wp_template` and `wp_template_part` with Polylang
+* Compatible with WordPress 5.9+ block themes
+
+**Order Search Improvements**
+* Language-aware order search in admin
+* Full-text search filtering by language
+* HPOS-compatible search implementation
+* Respects admin language filter
+
+**Modern Checkout Block Optimizations**
+* Enhanced Store API integration
+* Language context for checkout fields
+* Cart item language tracking
+* Product language validation in checkout
+
+#### 🔧 Technical Improvements
+* New `Blocks.php` class for comprehensive WooCommerce Blocks support
+* New `RestAPI.php` class for REST API language integration
+* New `BlockThemes.php` class for Site Editor and Block Theme support
+* Enhanced `Utilities.php` with HPOS helper methods:
+  - `is_hpos_enabled()` - Detect HPOS mode
+  - `get_order_language()` - Get order language (HPOS-aware)
+  - `set_order_language()` - Set order language (HPOS-aware)
+* Updated `Order.php` with HPOS compatibility and search filtering
+* Updated `Emails.php` with HPOS-compatible order language detection
+* Migration tool for adding language meta to existing orders
+
+#### 📦 Requirements Updates
+* WooCommerce minimum version: 7.0.0 (up from 4.0.0)
+* WooCommerce tested up to: 9.4.0
+* WordPress tested up to: 6.7
+* PHP: 7.4+ (unchanged)
+
+#### 🧪 Testing
+* Tested with WooCommerce 9.4.0
+* Tested with HPOS enabled and disabled
+* Tested with WooCommerce Blocks
+* Tested with Block Themes (Twenty Twenty-Four)
+* Tested with REST API v3
+* Tested with WordPress 6.7
+
+#### 📊 Statistics
+* New files: 3
+* Modified files: 5
+* New methods: 25+
+* Lines added: 1,200+
+
+#### 👥 Contributors
+* Ojārs Kapteinis (ojars@kapteinis.lv) - HPOS support, Blocks support, REST API integration, Block Themes support, testing
+
+#### 📄 License
+* New files (v1.7.0): CC BY-NC-ND 4.0
+* Original code: MIT License
+
+#### 🔗 Related Issues
+* [CRITICAL] Add High-Performance Order Storage (HPOS) Support
+* [CRITICAL] Add WooCommerce Block Editor Support
+* [CRITICAL] Add Product Collection Block Support
+* [HIGH] Add REST API v3 Language Support
+* [HIGH] Make Order Full-Text Search Language-Aware
+* [MEDIUM] Add Site Editor & Block Theme Support
+* [MEDIUM] Optimize for Modern Checkout Block Experience
+
+---
+
 ### 1.6.0 - 2025-11-01
 
 **PHP 8.4 Compatibility Update & Security Improvements**

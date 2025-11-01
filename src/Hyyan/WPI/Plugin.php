@@ -236,6 +236,7 @@ class Plugin
     {
         new Emails();
         new Admin\Settings();
+        new Admin\FeatureNotices();
         new Cart();
         //new Login();
         new Order();
@@ -257,6 +258,10 @@ class Plugin
         new Tax();
         new LocaleNumbers();
         new Ajax();
+        new Blocks();
+        new RestAPI();
+        new BlockThemes();
+        new Tools\OrderMigration();
     }
 
     /**

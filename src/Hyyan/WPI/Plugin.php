@@ -42,12 +42,12 @@ class Plugin
         add_action( 'pll_add_language', array( __CLASS__, 'handleNewLanguage' ) );
 
         if ( is_admin() ) {
-          if ( defined( 'DOING_AJAX' ) || (function_exists( 'is_ajax' ) && is_ajax()) ) {
+          if ( wp_doing_ajax() ) {
             //skipping ajax
           } else {
             $wcpagecheck_passed = get_option( 'wpi_wcpagecheck_passed' );
             $check_pages		 = Settings::getOption( 'checkpages', Features::getID(), 0 );
-            if ( ($check_pages && $check_pages != 'off') || ! ($wcpagecheck_passed) ) {
+            if ( ($check_pages && $check_pages !== 'off') || ! ($wcpagecheck_passed) ) {
                 add_action( 'current_screen', array( __CLASS__, 'wpi_ensure_woocommerce_pages_translated' ) );
             }
           }
@@ -292,7 +292,7 @@ class Plugin
 	public static function wpi_ensure_woocommerce_pages_translated() {
 
 		//to avoid repetition, only do this when we are going to be alerted to the results
-		if ( ! is_admin() || defined( 'DOING_AJAX' ) || (function_exists( 'is_ajax' ) && is_ajax()) ) {
+		if ( ! is_admin() || wp_doing_ajax() ) {
 			return;
 		}
 
@@ -311,11 +311,11 @@ class Plugin
 			'plugins',
 		);
 		$screen			 = function_exists( 'get_current_screen' ) ? get_current_screen() : false;
-		if ( ! $screen || ! in_array( $screen->id, $allowedPages ) ) {
+		if ( ! $screen || ! in_array( $screen->id, $allowedPages, true) ) {
 			return;
 		}
 		//avoid any re-entrance
-		if ( get_option( 'wpi_wcpagecheck_passed' ) == 'checking' ) {
+		if ( get_option( 'wpi_wcpagecheck_passed' ) === 'checking' ) {
 			return;
 		}
 		update_option( 'wpi_wcpagecheck_passed', 'checking' );
@@ -327,7 +327,7 @@ class Plugin
 		$failure		 = false;
 		//only create pages if the setting is on, otherwise only warnings will be shown
 		$create_pages	 = Settings::getOption( 'checkpages', Features::getID(), 0 );
-		if ( $create_pages && $create_pages == 'off' ) {
+		if ( $create_pages && $create_pages === 'off' ) {
 			$create_pages = false;
 		}
 
@@ -344,10 +344,10 @@ class Plugin
 		 * and appear to be missing if not translated
 		 */
 		if ( $pll_start_locale ) {
-			if ( $default_locale != $pll_start_locale ) {
+			if ( $default_locale !== $pll_start_locale ) {
 				Utilities::switchLocale( $default_locale );
 			}
-		} elseif ( $default_locale != $start_locale ) {
+		} elseif ( $default_locale !== $start_locale ) {
 			Utilities::switchLocale( $default_locale );
 		}
 
@@ -357,7 +357,7 @@ class Plugin
 		 */
 		foreach ( $page_types as $page_type ) {
 			$pageid = wc_get_page_id( $page_type );
-			if ( $pageid == -1 || ! get_post( $pageid ) ) {
+			if ( $pageid === -1 || ! get_post( $pageid ) ) {
 				if ( $create_pages ) {
 				    //if any of the pages is missing, rerun the woocommerce page creation
 				    //which will just fill in any missing page
@@ -402,11 +402,11 @@ class Plugin
 
 
 					//if this is not the original language
-					if ( $langLocale != $orig_postlocale ) {
+					if ( $langLocale !== $orig_postlocale ) {
 
 						// and there is no translation in target language
 						$translation_id = pll_get_post( $orig_page_id, $langLocale );
-						if ( $translation_id == 0 || $translation_id == $orig_page_id ) {
+						if ( $translation_id === 0 || $translation_id === $orig_page_id ) {
 							if ( $create_pages ) {
                                 //then create new post in target language
                                 $isNewPost = true;
@@ -476,9 +476,9 @@ class Plugin
 						$thisPost = get_post( $translation_id );
 						if ( $thisPost ) {
 							$postStatus = $thisPost->post_status;
-							if ( $postStatus != 'publish' ) {
+							if ( $postStatus !== 'publish' ) {
 								$baseURL = is_multisite() ? get_admin_url() : admin_url();
-								if ( $postStatus == 'trash' ) {
+								if ( $postStatus === 'trash' ) {
 									$warnings[ $page_type . '::' . $langSlug ] = sprintf(
 									__( '%1$s page in language %2$s has been deleted, please check the <a href="%3$s">trash</a>, and restore page %4$s', 'woo-poly-integration' ), $page_type, $langLocale, $baseURL . 'edit.php?post_status=trash&post_type=page&lang=' . $langSlug, $translation_id );
 								} else {
@@ -523,10 +523,10 @@ class Plugin
 		 * check current locale and reset it if changed
 		 */
 		$locale = get_locale();
-		if ( $locale != $start_locale ) {
+		if ( $locale !== $start_locale ) {
 			Utilities::switch_wp_locale( $start_locale );
 		}
-		if ( $locale != $pll_start_locale ) {
+		if ( $locale !== $pll_start_locale ) {
 			Utilities::switch_pll_locale( $pll_start_locale );
 		}
 	}

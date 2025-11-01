@@ -93,7 +93,7 @@ class Reports
             'sales_by_product',
             'sales_by_category',
         );
-        if (!in_array($this->report, $reports)) {
+        if (!in_array($this->report, $reports, true)) {
             return $query;
         }
 

@@ -85,7 +85,7 @@ class Meta
         $options = get_option('polylang');
         $sync = $options['taxonomies'];
         $attrname = 'pa_' . $attribute['attribute_name'];
-        if (!in_array($attribute, $sync)) {
+        if (!in_array($attribute, $sync, true)) {
             $options['taxonomies'][] = $attrname;
             update_option('polylang', $options);
         }
@@ -302,10 +302,10 @@ class Meta
     //get product references to translate
     $upsell_ids = array();
     $cross_sell_ids = array();
-    if (in_array('_upsell_ids', static::getProductMetaToCopy())) {
+    if (in_array('_upsell_ids', static::getProductMetaToCopy(, true))) {
         $upsell_ids=$source_product->get_upsell_ids();
     }
-    if (in_array('_crosssell_ids', static::getProductMetaToCopy())) {
+    if (in_array('_crosssell_ids', static::getProductMetaToCopy(, true))) {
         $cross_sell_ids=$source_product->get_cross_sell_ids();
     }
 
@@ -354,7 +354,7 @@ class Meta
         //if saving existing item, then add check that sync is currently on
         if (!($copy)) {
             $metas = static::getProductMetaToCopy();
-            if (!(in_array('_custom_product_attributes', $metas))) {
+            if (!(in_array('_custom_product_attributes', $metas, true))) {
                 return false;
             }
         }
@@ -430,14 +430,14 @@ class Meta
                         break;
                     //attributes to synchronize, not translated
                     case "product_shipping_class":
-                        if (! (in_array('product_shipping_class', static::getProductMetaToCopy()))) {
+                        if (! (in_array('product_shipping_class', static::getProductMetaToCopy(, true)))) {
                             break;
                         }
                         $new_terms[] = $slug;
                         break;
                     //woo3 visibility and featured product
                     case "product_visibility":
-                        if (! (in_array('_visibility', static::getProductMetaToCopy()))) {
+                        if (! (in_array('_visibility', static::getProductMetaToCopy(, true)))) {
                             break;
                         }
                     case "product_type":
@@ -557,7 +557,7 @@ class Meta
     /*
     public function syncShippingClass($post_id, $post, $update)
     {
-        if (in_array('product_shipping_class', $this->getProductMetaToCopy())) {
+        if (in_array('product_shipping_class', $this->getProductMetaToCopy(, true))) {
             // If adding new product translation copy shipping class, otherwise
             // sync all product translations with shipping class of this.
             $copy = isset($_GET['new_lang']) && isset($_GET['from_post']);
@@ -779,8 +779,8 @@ class Meta
         //change selector code to allow Product Attributes and Custom Product Attributes
         //to be separately locked or unlocked.
         $selectors[] = '.insert';
-        if (in_array('_product_attributes', $metas)) {
-            if (in_array('_custom_product_attributes', $metas)) {
+        if (in_array('_product_attributes', $metas, true)) {
+            if (in_array('_custom_product_attributes', $metas, true)) {
                 $selectors[] = '#product_attributes :input';
                 $selectors[] = '#product_attributes .select2-selection';
             } else {
@@ -790,7 +790,7 @@ class Meta
             }
         }
         //if only global product attributes are NOT synchronised, exclude them from selection
-        elseif (in_array('_custom_product_attributes', $metas)) {
+        elseif (in_array('_custom_product_attributes', $metas, true)) {
             $selectors[] = '#product_attributes div.woocommerce_attribute:not(.taxonomy) :input';
         }
         

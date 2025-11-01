@@ -137,9 +137,9 @@ class Coupon
     
     public function adminRegisterCouponStrings()
     {
-        if (is_admin() && (!is_ajax())) {
+        if (is_admin() && (!wp_doing_ajax())) {
         global $pagenow;
-            if ( ($pagenow) && ( $pagenow == 'admin.php' ) && ($_GET[ 'page' ] == 'mlang_strings') ) {
+            if ( $pagenow && $pagenow === 'admin.php' && isset($_GET['page']) && $_GET['page'] === 'mlang_strings' ) {
                   $this->registerCouponStringsForTranslation();
             }
         }

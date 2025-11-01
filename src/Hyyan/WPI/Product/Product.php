@@ -81,7 +81,7 @@ class Product
      */
     public static function sync_ajax_woocommerce_feature_product() {
       $metas = Meta::getDisabledProductMetaToCopy();
-      if ( in_array( '_visibility', $metas ) ) {
+      if ( in_array( '_visibility', $metas , true) ) {
         return;
       }
 
@@ -178,11 +178,11 @@ class Product
     {
         $options = get_option('polylang');
         $postTypes = $options['post_types'];
-        if (!in_array('product', $postTypes)) {
+        if (!in_array('product', $postTypes, true)) {
             $options['post_types'][] = 'product';
             update_option('polylang', $options);
         }
-		if ( ! in_array( 'product_variation', $postTypes ) ) {
+		if ( ! in_array( 'product_variation', $postTypes , true) ) {
 			$options[ 'post_types' ][] = 'product_variation';
 			update_option( 'polylang', $options );
 		}
@@ -199,7 +199,7 @@ class Product
     {
         $options = get_option('polylang');
         $sync = $options['sync'];
-        if (!in_array('post_parent', $sync)) {
+        if (!in_array('post_parent', $sync, true)) {
             $options['sync'][] = 'post_parent';
             update_option('polylang', $options);
         }

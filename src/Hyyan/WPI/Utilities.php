@@ -113,7 +113,7 @@ final class Utilities
         $langs = $polylang->model->get_languages_list();
 
         foreach ($langs as $lang) {
-            if ($lang->slug == $slug) {
+            if ($lang->slug === $slug) {
                 return $lang;
             }
         }
@@ -152,9 +152,10 @@ final class Utilities
      */
     public static function getCurrentUrl()
     {
-        return (is_ssl() ? 'https://' : 'http://')
-                . $_SERVER['HTTP_HOST']
-                . $_SERVER['REQUEST_URI'];
+        $http_host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '';
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+
+        return (is_ssl() ? 'https://' : 'http://') . $http_host . $request_uri;
     }
 
     /**
@@ -467,12 +468,12 @@ final class Utilities
         }
         //if input is already in correct language just return it
         $sourcelang = pll_get_post_language($product_id);
-        if ($sourcelang == $lang) {
+        if ($sourcelang === $lang) {
             return $product_id;
         }
         //if a translated item is found, return it
         $translated_id = pll_get_post($product_id, $lang);
-        if (($translated_id) && ($translated_id != $product_id)) {
+        if (($translated_id) && ($translated_id !== $product_id)) {
             return $translated_id;
         }
         //ok no linked Polylang translation so maybe it's a variation
@@ -482,7 +483,7 @@ final class Utilities
             $parent_id = $product->get_parent_id();
             $translated_id = pll_get_post($parent_id, $lang);
             //if no translation return the original product variation id
-            if ((! $translated_id) || ($translated_id == $parent_id)) {
+            if ((! $translated_id) || ($translated_id === $parent_id)) {
                 return $product_id;
             }
             //ok, it's a variation and the parent product is translated, so here's what to do:

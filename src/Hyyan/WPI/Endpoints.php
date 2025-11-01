@@ -230,7 +230,7 @@ class Endpoints
         );
 
         foreach ($items as $item) {
-            if (in_array($item->object_id, $translations)) {
+            if (in_array($item->object_id, $translations, true)) {
                 $vars = WC()->query->get_query_vars();
                 foreach ($vars as $key => $value) {
                     if ($value && false !== ($pos = strpos($item->url, $value))) {

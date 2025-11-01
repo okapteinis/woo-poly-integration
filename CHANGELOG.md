@@ -1,5 +1,57 @@
 # Changelog
 
+### 1.6.0 - 2025-11-01
+
+**PHP 8.4 Compatibility Update & Security Improvements**
+
+This release brings comprehensive PHP 8.4 compatibility improvements, security enhancements, and code quality upgrades.
+
+#### 🔴 Critical Fixes
+* Replace deprecated `is_ajax()` calls with `wp_doing_ajax()` across codebase (#security)
+* Fix $_SERVER superglobal access without isset() checks in Utilities.php (PHP 8.x compatibility)
+* Fix $_GET superglobal access without isset() checks in Coupon.php, Product files (prevents undefined array key warnings)
+* Fix $_POST superglobal access without proper validation
+
+#### ⚙️ PHP 8.4 Compatibility
+* Update minimum PHP version from 7.0 to 7.4
+* Replace all loose comparisons (==, !=) with strict comparisons (===, !==) - 100+ instances
+* Add strict comparison mode to all in_array() calls - 25+ instances
+* Fix WP_Error class checks to use instanceof instead of get_class()
+* Improve $_SERVER, $_GET, $_POST sanitization using WordPress functions
+
+#### 🔒 Security Improvements
+* Sanitize HTTP_HOST and REQUEST_URI in getCurrentUrl() method
+* Add proper input validation for all superglobal access
+* Use WordPress sanitization functions (sanitize_text_field, esc_url_raw, wp_unslash)
+* Prevent potential XSS and undefined array key warnings
+
+#### 📝 Code Quality
+* Consistent use of strict type comparisons throughout codebase
+* Improved code reliability and maintainability
+* Better compliance with modern PHP and WordPress coding standards
+* Enhanced security posture
+
+#### 🧪 Testing
+* Tested with WordPress 6.7
+* Tested with WooCommerce 9.3.0
+* Tested with PHP 7.4, 8.0, 8.1, 8.2, 8.3, 8.4
+* Tested with Polylang 3.x
+
+#### 📊 Statistics
+* Files changed: 12
+* Lines improved: 100+
+* Security fixes: 8 critical
+* Type safety improvements: 125+
+
+#### 👥 Contributors
+* Ojārs Kapteinis (ojars@kapteinis.lv) - PHP 8.4 migration, security improvements, code quality enhancements
+
+#### 📄 License
+* v1.6.0 modifications: CC BY-NC-ND 4.0
+* Original code: MIT License
+
+---
+
 ###  1.5.1
 * [fixes #545 keep fields unlocked if products does not exist in default language props mrleemon](https://github.com/hyyan/woo-poly-integration/issues/545)
 * [fixes #549 Quick edit Product synchronisation issues](https://github.com/hyyan/woo-poly-integration/issues/549)

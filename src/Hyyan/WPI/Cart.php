@@ -64,7 +64,7 @@ class Cart
         foreach (WC()->cart->get_cart() as $values) {
             $product = $values['data'];
 
-            if (in_array($product->get_id(), $IDS)) {
+            if (in_array($product->get_id(), $IDS, true)) {
                 $result = $product->get_id();
                 break;
             }
@@ -198,7 +198,7 @@ class Cart
                     // Get term translation from id
                     $term_translation = get_term($term_id_translation);
 
-                    $error = get_class($term_translation) == 'WP_Error';
+                    $error = 0 instanceof WP_Error;
 
                     $item_data_translation[] = array('key' => $data['key'], 'value' => !$error ? $term_translation->name : $data['value']); // On error return same
                 }

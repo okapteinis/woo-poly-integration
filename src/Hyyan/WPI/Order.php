@@ -62,7 +62,7 @@ class Order
     {
         $options   = get_option('polylang');
         $postTypes = $options['post_types'];
-        if (!in_array('shop_order', $postTypes)) {
+        if (!in_array('shop_order', $postTypes, true)) {
             $options['post_types'][] = 'shop_order';
             update_option('polylang', $options);
         }

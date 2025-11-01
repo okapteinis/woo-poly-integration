@@ -264,7 +264,7 @@ class Variation
      */
     public function syncShippingClass($from, $to)
     {
-        if (in_array('product_shipping_class', Meta::getProductMetaToCopy())) {
+        if (in_array('product_shipping_class', Meta::getProductMetaToCopy(, true))) {
             $variation_from = wc_get_product($from);
             if ($variation_from) {
                 $shipping_class = $variation_from->get_shipping_class();
@@ -315,7 +315,7 @@ class Variation
         }
         /* synchronize */
         foreach ($keys as $key) {
-            if (!in_array($key, $metas_nosync)) {
+            if (!in_array($key, $metas_nosync, true)) {
                 /*
                  * the synchronization process of multiple values custom fields is
                  * easier if we delete all metas first

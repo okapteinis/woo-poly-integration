@@ -116,7 +116,7 @@ class Variable
         }
 
         global $pagenow;
-        if (!in_array($pagenow, array('post.php', 'post-new.php'))  || $post->post_type !== 'product') {
+        if (!in_array($pagenow, array('post.php', 'post-new.php', true))  || $post->post_type !== 'product') {
             //note, arrives here for example when duplicating variable product from products screen
             return false;
         }
@@ -260,7 +260,7 @@ class Variable
         // Don't sync if Default Attribute syncronization is disabled
         $metas = Meta::getProductMetaToCopy();
 
-        if (!in_array('_default_attributes', $metas)) {
+        if (!in_array('_default_attributes', $metas, true)) {
             return;
         }
 

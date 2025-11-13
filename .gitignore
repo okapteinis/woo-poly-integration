@@ -2,5 +2,45 @@
 /build
 .php_cs.cache
 *.gif
-*.gif
 .idea
+
+# Composer
+/vendor/
+composer.lock
+
+# PHPUnit
+/.phpunit.cache/
+/coverage/
+phpunit.xml
+/tests/wordpress/
+
+# PHPStan
+/.phpstan.cache/
+phpstan.neon
+
+# PHPCS
+phpcs.xml
+
+# IDE
+/.vscode/
+/.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+/node_modules/
+/dist/
+*.zip
+
+# Logs
+*.log
+/logs/
+
+# Environment
+.env
+.env.local

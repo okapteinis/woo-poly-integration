@@ -1,0 +1,39 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+
+parameters:
+    level: 6
+    paths:
+        - src
+
+    # Ignore errors in third-party code
+    excludePaths:
+        - vendor
+        - tests/wordpress
+        - node_modules
+
+    # Bootstrap file for loading WordPress functions
+    bootstrapFiles:
+        - tests/bootstrap.php
+
+    # Ignore specific error patterns
+    ignoreErrors:
+        # Allow dynamic properties for now (WordPress compatibility)
+        - '#Access to an undefined property#'
+        # Allow missing type hints in WordPress hooks
+        - '#Method .* has parameter .* with no typehint specified#'
+
+    # Configure WordPress stubs
+    stubFiles:
+        - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
+        - vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
+
+    # Report possibly undefined variables
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false
+
+    # Performance optimizations
+    parallel:
+        maximumNumberOfProcesses: 4
+        minimumNumberOfJobsPerProcess: 2

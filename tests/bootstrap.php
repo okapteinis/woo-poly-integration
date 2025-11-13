@@ -68,4 +68,5 @@ if (file_exists(dirname(__DIR__) . '/src/Hyyan/WPI/Autoloader.php')) {
     require_once dirname(__DIR__) . '/src/Hyyan/WPI/Autoloader.php';
 }
 
-echo "PHPUnit Bootstrap loaded successfully\n";
+// PHPUnit 10+ enforces strict output rules during tests - commenting out echo
+// echo "PHPUnit Bootstrap loaded successfully\n";

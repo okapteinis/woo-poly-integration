@@ -12,6 +12,7 @@ namespace Hyyan\WPI\Taxonomies;
 
 use Hyyan\WPI\HooksInterface;
 use Hyyan\WPI\Utilities;
+use Hyyan\WPI\Security\Nonce;
 
 /**
  * Categories.
@@ -42,18 +43,44 @@ class Categories implements TaxonomiesInterface
      *
      * Keep product categories translation synced
      *
+     * @since 1.7.0 Added nonce verification for security
      * @param int    $termID   the term id
      * @param int    $ttID     ?
      * @param string $taxonomy the taxonomy name
      */
     public function syncProductCatCustomFields($termID, $ttID = '', $taxonomy = '')
     {
-        if (isset($_POST['display_type']) && 'product_cat' === $taxonomy) {
+        // Only process if it's a product category
+        if ('product_cat' !== $taxonomy) {
+            return;
+        }
+
+        // Verify nonce - WordPress should have validated this, but verify defensively
+        // Check for both tag and category nonces as WordPress uses different ones
+        $nonce_verified = false;
+        if (isset($_POST['_wpnonce'])) {
+            $nonce_verified = wp_verify_nonce($_POST['_wpnonce'], 'update-tag_' . $termID) ||
+                            wp_verify_nonce($_POST['_wpnonce'], 'add-tag');
+        }
+
+        // For AJAX requests, check ajax nonce
+        if (!$nonce_verified && defined('DOING_AJAX') && DOING_AJAX) {
+            if (isset($_POST['security'])) {
+                $nonce_verified = wp_verify_nonce($_POST['security'], 'add-tag');
+            }
+        }
+
+        // If we're in admin and nonce not verified, skip for security
+        if (is_admin() && !$nonce_verified && !defined('WP_CLI')) {
+            return;
+        }
+
+        if (isset($_POST['display_type'])) {
             $this->doSyncProductCatCustomFields(
-                    $termID, 'display_type', esc_attr($_POST['display_type'])
+                    $termID, 'display_type', sanitize_text_field($_POST['display_type'])
             );
         }
-        if (isset($_POST['product_cat_thumbnail_id']) && 'product_cat' === $taxonomy) {
+        if (isset($_POST['product_cat_thumbnail_id'])) {
             $this->doSyncProductCatCustomFields(
                     $termID, 'thumbnail_id', absint($_POST['product_cat_thumbnail_id'])
             );
@@ -83,7 +110,7 @@ class Categories implements TaxonomiesInterface
             return false;
         }
 
-        $ID = esc_attr($_GET['from_tag']);
+        $ID = absint($_GET['from_tag']);
         $type = get_term_meta($ID, 'display_type', true);
         $thumbID = absint(get_term_meta($ID, 'thumbnail_id', true));
         $image = $thumbID ?
@@ -91,10 +118,10 @@ class Categories implements TaxonomiesInterface
                 wc_placeholder_img_src(); ?>
         <script type="text/javascript">
             jQuery(function ($) {
-                $('#display_type option[value="<?php echo $type ?>"]')
+                $('#display_type option[value="<?php echo esc_js($type); ?>"]')
                         .prop("selected", true);
-                $('#product_cat_thumbnail img').attr('src', '<?php echo $image; ?>');
-                $('#product_cat_thumbnail_id').val('<?php echo $thumbID; ?>');
+                $('#product_cat_thumbnail img').attr('src', '<?php echo esc_url($image); ?>');
+                $('#product_cat_thumbnail_id').val('<?php echo absint($thumbID); ?>');
         <?php if ($thumbID): ?>
                     $('.remove_image_button').show();
         <?php endif; ?>

@@ -49,12 +49,18 @@ class Settings extends \WeDevs_Settings_API
 
     /**
      * Add plugin menu.
+     *
+     * @since 1.7.0 Fixed capability mismatch - now uses 'manage_options' consistently
      */
     public function registerMenu()
     {
 	  	if ( current_user_can( 'manage_options' ) ) {
         add_options_page(
-                __('Hyyan WooCommerce Polylang Integration', 'woo-poly-integration'), __('WooPoly', 'woo-poly-integration'), 'delete_posts', 'hyyan-wpi', array($this, 'outputPage')
+                __('Hyyan WooCommerce Polylang Integration', 'woo-poly-integration'),
+                __('WooPoly', 'woo-poly-integration'),
+                'manage_options', // Fixed: was 'delete_posts' which is less restrictive
+                'hyyan-wpi',
+                array($this, 'outputPage')
         );
       }
     }

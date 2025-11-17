@@ -154,8 +154,13 @@ class Variation
         //on translations when processing new order
         //it also did not return all versions of post for deletion
         global $wpdb;
-        $postids=$wpdb->get_col("select post_id from " . $wpdb->postmeta . " where meta_key='" .
-            self::DUPLICATE_KEY .  "' and meta_value=" . $variatonID);
+        $postids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %d",
+                self::DUPLICATE_KEY,
+                $variatonID
+            )
+        );
 
         if (true === $returnIDS) {
             return $postids;

@@ -70,8 +70,10 @@ class Categories implements TaxonomiesInterface
             }
         }
 
-        // If we're in admin and nonce not verified, skip for security
-        if (is_admin() && !$nonce_verified && !defined('WP_CLI')) {
+        // Security: Verify nonce for all term creation/editing operations
+        // This protects against CSRF attacks from both admin and frontend contexts
+        // The created_term and edit_term hooks can fire from anywhere
+        if (!$nonce_verified && !defined('WP_CLI')) {
             return;
         }
 

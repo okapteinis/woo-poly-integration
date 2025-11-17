@@ -85,6 +85,11 @@ class Product
         return;
       }
 
+      // Security: Check if product_id is set before accessing
+      if ( !isset( $_GET['product_id'] ) ) {
+        return;
+      }
+
       $product = wc_get_product( absint( $_GET[ 'product_id' ] ) );
       if ( $product ) {
         //woocommerce action runs last so we need to set translation feature to the opposite of current value

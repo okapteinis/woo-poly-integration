@@ -135,6 +135,11 @@ class Coupon
         return pll__($value);
     }
     
+    /**
+     * Register coupon strings for translation in admin.
+     *
+     * @since 1.7.0 Added isset() check and replaced deprecated is_ajax() with wp_doing_ajax()
+     */
     public function adminRegisterCouponStrings()
     {
         if (is_admin() && (!wp_doing_ajax())) {

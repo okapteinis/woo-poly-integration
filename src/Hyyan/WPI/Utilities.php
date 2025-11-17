@@ -148,13 +148,25 @@ final class Utilities
      *
      * Get the full url for current location
      *
+     * @since 1.7.0 Added security validation for HTTP_HOST to prevent header injection
      * @return string
      */
     public static function getCurrentUrl()
     {
-        return (is_ssl() ? 'https://' : 'http://')
-                . $_SERVER['HTTP_HOST']
-                . $_SERVER['REQUEST_URI'];
+        // Validate and sanitize HTTP_HOST
+        $host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field($_SERVER['HTTP_HOST']) : '';
+
+        // Validate host against WordPress site URL to prevent header injection
+        $site_host = parse_url(get_site_url(), PHP_URL_HOST);
+        if ($host !== $site_host) {
+            // If HTTP_HOST doesn't match site URL, use the site URL host
+            $host = $site_host;
+        }
+
+        $protocol = is_ssl() ? 'https://' : 'http://';
+        $uri = isset($_SERVER['REQUEST_URI']) ? esc_url_raw($_SERVER['REQUEST_URI']) : '';
+
+        return $protocol . $host . $uri;
     }
 
     /**

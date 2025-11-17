@@ -12,6 +12,7 @@ namespace Hyyan\WPI\Product;
 
 use Hyyan\WPI\HooksInterface;
 use Hyyan\WPI\Utilities;
+use Hyyan\WPI\Security\Nonce;
 
 /**
  * Variable.
@@ -305,11 +306,16 @@ class Variable
 
     /**
      * Remove variatoins related to current removed variation.
+     *
+     * @since 1.7.0 Added nonce verification for security
      */
     public function removeVariations()
     {
+        // Verify nonce for AJAX security
+        Nonce::verifyAjax('delete-variations');
+
         if (isset($_POST['variation_ids'])) {
-            $IDS = (array) $_POST['variation_ids'];
+            $IDS = array_map('absint', (array) $_POST['variation_ids']);
 
             foreach ($IDS as $ID) {
                 Variation::deleteRelatedVariation($ID);

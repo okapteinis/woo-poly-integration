@@ -312,7 +312,7 @@ class Variable
     public function removeVariations()
     {
         // Verify nonce for AJAX security
-        Nonce::verifyAjax('delete-variations');
+        Nonce::verify_ajax('delete-variations');
 
         if (isset($_POST['variation_ids'])) {
             $IDS = array_map('absint', (array) $_POST['variation_ids']);

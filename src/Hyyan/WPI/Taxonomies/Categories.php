@@ -73,7 +73,13 @@ class Categories implements TaxonomiesInterface
         // Security: Verify nonce for all term creation/editing operations
         // This protects against CSRF attacks from both admin and frontend contexts
         // The created_term and edit_term hooks can fire from anywhere
-        if (!$nonce_verified && !defined('WP_CLI')) {
+        // Exclude legitimate background processes that lack nonces
+        if (
+            !$nonce_verified &&
+            !defined('WP_CLI') &&
+            !(defined('DOING_CRON') && DOING_CRON) &&
+            !(defined('REST_REQUEST') && REST_REQUEST)
+        ) {
             return;
         }
 
